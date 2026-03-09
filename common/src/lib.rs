@@ -48,7 +48,7 @@ impl FromStr for HashType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut bytes = [0_u8; 32];
         hex::decode_to_slice(s, &mut bytes)?;
-        Ok(HashType(bytes))
+        Ok(Self(bytes))
     }
 }
 
@@ -66,7 +66,7 @@ impl From<HashType> for [u8; 32] {
 
 impl From<[u8; 32]> for HashType {
     fn from(bytes: [u8; 32]) -> Self {
-        HashType(bytes)
+        Self(bytes)
     }
 }
 
@@ -74,7 +74,7 @@ impl TryFrom<Vec<u8>> for HashType {
     type Error = <[u8; 32] as TryFrom<Vec<u8>>>::Error;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        Ok(HashType(value.try_into()?))
+        Ok(Self(value.try_into()?))
     }
 }
 
