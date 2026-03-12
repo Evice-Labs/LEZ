@@ -100,7 +100,7 @@ impl RocksDBIO {
             let block_id = block.header.block_id;
             dbio.put_meta_last_block_in_db(block_id)?;
             dbio.put_meta_last_observed_l1_lib_header_in_db(block.bedrock_parent_id)?;
-            dbio.put_meta_first_block_in_db(block)?;
+            dbio.put_meta_first_block_in_db_batch(block)?;
             dbio.put_meta_is_first_block_set()?;
 
             // First breakpoint setup
@@ -311,7 +311,7 @@ mod tests {
         let transfer_tx = transfer(1, 0, true);
         let block = common::test_utils::produce_dummy_block(2, Some(prev_hash), vec![transfer_tx]);
 
-        dbio.put_block(block, [1; 32]).unwrap();
+        dbio.put_block_batch(block, [1; 32]).unwrap();
 
         let last_id = dbio.get_meta_last_block_in_db().unwrap();
         let first_id = dbio.get_meta_first_block_in_db().unwrap();
@@ -410,7 +410,7 @@ mod tests {
 
         let control_hash1 = block.header.hash;
 
-        dbio.put_block(block, [1; 32]).unwrap();
+        dbio.put_block_batch(block, [1; 32]).unwrap();
 
         let last_id = dbio.get_meta_last_block_in_db().unwrap();
         let last_block = dbio.get_block(last_id).unwrap();
@@ -421,7 +421,7 @@ mod tests {
 
         let control_hash2 = block.header.hash;
 
-        dbio.put_block(block, [2; 32]).unwrap();
+        dbio.put_block_batch(block, [2; 32]).unwrap();
 
         let last_id = dbio.get_meta_last_block_in_db().unwrap();
         let last_block = dbio.get_block(last_id).unwrap();
@@ -432,7 +432,7 @@ mod tests {
         let control_tx_hash1 = transfer_tx.hash();
 
         let block = common::test_utils::produce_dummy_block(4, Some(prev_hash), vec![transfer_tx]);
-        dbio.put_block(block, [3; 32]).unwrap();
+        dbio.put_block_batch(block, [3; 32]).unwrap();
 
         let last_id = dbio.get_meta_last_block_in_db().unwrap();
         let last_block = dbio.get_block(last_id).unwrap();
@@ -443,7 +443,7 @@ mod tests {
         let control_tx_hash2 = transfer_tx.hash();
 
         let block = common::test_utils::produce_dummy_block(5, Some(prev_hash), vec![transfer_tx]);
-        dbio.put_block(block, [4; 32]).unwrap();
+        dbio.put_block_batch(block, [4; 32]).unwrap();
 
         let control_block_id1 = dbio.get_block_id_by_hash(control_hash1.0).unwrap();
         let control_block_id2 = dbio.get_block_id_by_hash(control_hash2.0).unwrap();
@@ -474,7 +474,7 @@ mod tests {
         let block = common::test_utils::produce_dummy_block(2, Some(prev_hash), vec![transfer_tx]);
 
         block_res.push(block.clone());
-        dbio.put_block(block, [1; 32]).unwrap();
+        dbio.put_block_batch(block, [1; 32]).unwrap();
 
         let last_id = dbio.get_meta_last_block_in_db().unwrap();
         let last_block = dbio.get_block(last_id).unwrap();
@@ -484,7 +484,7 @@ mod tests {
         let block = common::test_utils::produce_dummy_block(3, Some(prev_hash), vec![transfer_tx]);
 
         block_res.push(block.clone());
-        dbio.put_block(block, [2; 32]).unwrap();
+        dbio.put_block_batch(block, [2; 32]).unwrap();
 
         let last_id = dbio.get_meta_last_block_in_db().unwrap();
         let last_block = dbio.get_block(last_id).unwrap();
@@ -494,7 +494,7 @@ mod tests {
 
         let block = common::test_utils::produce_dummy_block(4, Some(prev_hash), vec![transfer_tx]);
         block_res.push(block.clone());
-        dbio.put_block(block, [3; 32]).unwrap();
+        dbio.put_block_batch(block, [3; 32]).unwrap();
 
         let last_id = dbio.get_meta_last_block_in_db().unwrap();
         let last_block = dbio.get_block(last_id).unwrap();
@@ -504,7 +504,7 @@ mod tests {
 
         let block = common::test_utils::produce_dummy_block(5, Some(prev_hash), vec![transfer_tx]);
         block_res.push(block.clone());
-        dbio.put_block(block, [4; 32]).unwrap();
+        dbio.put_block_batch(block, [4; 32]).unwrap();
 
         let block_hashes_mem: Vec<[u8; 32]> =
             block_res.into_iter().map(|bl| bl.header.hash.0).collect();
@@ -567,7 +567,7 @@ mod tests {
             vec![transfer_tx1, transfer_tx2],
         );
 
-        dbio.put_block(block, [1; 32]).unwrap();
+        dbio.put_block_batch(block, [1; 32]).unwrap();
 
         let last_id = dbio.get_meta_last_block_in_db().unwrap();
         let last_block = dbio.get_block(last_id).unwrap();
@@ -584,7 +584,7 @@ mod tests {
             vec![transfer_tx1, transfer_tx2],
         );
 
-        dbio.put_block(block, [2; 32]).unwrap();
+        dbio.put_block_batch(block, [2; 32]).unwrap();
 
         let last_id = dbio.get_meta_last_block_in_db().unwrap();
         let last_block = dbio.get_block(last_id).unwrap();
@@ -601,7 +601,7 @@ mod tests {
             vec![transfer_tx1, transfer_tx2],
         );
 
-        dbio.put_block(block, [3; 32]).unwrap();
+        dbio.put_block_batch(block, [3; 32]).unwrap();
 
         let last_id = dbio.get_meta_last_block_in_db().unwrap();
         let last_block = dbio.get_block(last_id).unwrap();
@@ -612,7 +612,7 @@ mod tests {
 
         let block = common::test_utils::produce_dummy_block(5, Some(prev_hash), vec![transfer_tx]);
 
-        dbio.put_block(block, [4; 32]).unwrap();
+        dbio.put_block_batch(block, [4; 32]).unwrap();
 
         let acc1_tx = dbio.get_acc_transactions(*acc1().value(), 0, 7).unwrap();
         let acc1_tx_hashes: Vec<[u8; 32]> = acc1_tx.into_iter().map(|tx| tx.hash().0).collect();
