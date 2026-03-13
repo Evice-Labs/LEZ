@@ -99,7 +99,6 @@ impl RocksDBIO {
         } else if let Some((block, initial_state)) = start_data {
             let block_id = block.header.block_id;
             dbio.put_meta_last_block_in_db(block_id)?;
-            dbio.put_meta_last_observed_l1_lib_header_in_db(block.bedrock_parent_id)?;
             dbio.put_meta_first_block_in_db_batch(block)?;
             dbio.put_meta_is_first_block_set()?;
 
@@ -279,6 +278,7 @@ mod tests {
         let last_id = dbio.get_meta_last_block_in_db().unwrap();
         let first_id = dbio.get_meta_first_block_in_db().unwrap();
         let is_first_set = dbio.get_meta_is_first_block_set().unwrap();
+        let last_observed_l1_header = dbio.get_meta_last_observed_l1_lib_header_in_db().unwrap();
         let last_br_id = dbio.get_meta_last_breakpoint_id().unwrap();
         let last_block = dbio.get_block(1).unwrap();
         let breakpoint = dbio.get_breakpoint(0).unwrap();
@@ -286,6 +286,7 @@ mod tests {
 
         assert_eq!(last_id, 1);
         assert_eq!(first_id, 1);
+        assert_eq!(last_observed_l1_header, None);
         assert!(is_first_set);
         assert_eq!(last_br_id, 0);
         assert_eq!(last_block.header.hash, genesis_block().header.hash);
@@ -315,6 +316,10 @@ mod tests {
 
         let last_id = dbio.get_meta_last_block_in_db().unwrap();
         let first_id = dbio.get_meta_first_block_in_db().unwrap();
+        let last_observed_l1_header = dbio
+            .get_meta_last_observed_l1_lib_header_in_db()
+            .unwrap()
+            .unwrap();
         let is_first_set = dbio.get_meta_is_first_block_set().unwrap();
         let last_br_id = dbio.get_meta_last_breakpoint_id().unwrap();
         let last_block = dbio.get_block(last_id).unwrap();
@@ -323,6 +328,7 @@ mod tests {
 
         assert_eq!(last_id, 2);
         assert_eq!(first_id, 1);
+        assert_eq!(last_observed_l1_header, [1; 32]);
         assert!(is_first_set);
         assert_eq!(last_br_id, 0);
         assert_ne!(last_block.header.hash, genesis_block().header.hash);
