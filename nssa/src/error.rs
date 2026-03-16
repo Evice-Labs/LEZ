@@ -76,7 +76,7 @@ mod tests {
         TestErr,
     }
 
-    fn test_function_ensure(cond: bool) -> Result<(), testError> {
+    fn test_function_ensure(cond: bool) -> Result<(), TestError> {
         ensure!(cond, TestError::TestErr);
 
         Ok(())
