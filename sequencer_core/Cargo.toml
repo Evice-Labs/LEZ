@@ -13,7 +13,6 @@ mempool.workspace = true
 bedrock_client.workspace = true
 key_protocol.workspace = true
 
-base58.workspace = true
 anyhow.workspace = true
 serde.workspace = true
 serde_json.workspace = true
