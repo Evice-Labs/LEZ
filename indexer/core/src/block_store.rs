@@ -13,7 +13,7 @@ use tokio::sync::RwLock;
 #[derive(Clone)]
 pub struct IndexerStore {
     dbio: Arc<RocksDBIO>,
-    final_state: Arc<RwLock<V02State>>,
+    current_state: Arc<RwLock<V02State>>,
 }
 
 impl IndexerStore {
@@ -26,11 +26,11 @@ impl IndexerStore {
         start_data: Option<(Block, V02State)>,
     ) -> Result<Self> {
         let dbio = RocksDBIO::open_or_create(location, start_data)?;
-        let final_state = dbio.final_state()?;
+        let current_state = dbio.final_state()?;
 
         Ok(Self {
             dbio: Arc::new(dbio),
-            final_state: Arc::new(RwLock::new(final_state)),
+            current_state: Arc::new(RwLock::new(current_state)),
         })
     }
 
@@ -103,18 +103,17 @@ impl IndexerStore {
         Ok(self.dbio.final_state()?)
     }
 
-    pub async fn get_account_final(&self, account_id: &AccountId) -> Result<Account> {
-        let account = {
-            let state_guard = self.final_state.read().await;
-            state_guard.get_account_by_id(*account_id)
-        };
-
-        Ok(account)
+    pub async fn account_current_state(&self, account_id: &AccountId) -> Result<Account> {
+        Ok(self
+            .current_state
+            .read()
+            .await
+            .get_account_by_id(*account_id))
     }
 
     pub async fn put_block(&mut self, mut block: Block, l1_header: HeaderId) -> Result<()> {
         {
-            let mut state_guard = self.final_state.write().await;
+            let mut state_guard = self.current_state.write().await;
 
             for transaction in &block.body.transactions {
                 transaction
@@ -135,27 +134,13 @@ impl IndexerStore {
 
 #[cfg(test)]
 mod tests {
-    use nssa::AccountId;
+    use nssa::{AccountId, PublicKey};
     use tempfile::tempdir;
 
     use super::*;
 
     fn genesis_block() -> Block {
         common::test_utils::produce_dummy_block(1, None, vec![])
-    }
-
-    fn acc1() -> AccountId {
-        AccountId::new([
-            148, 179, 206, 253, 199, 51, 82, 86, 232, 2, 152, 122, 80, 243, 54, 207, 237, 112, 83,
-            153, 44, 59, 204, 49, 128, 84, 160, 227, 216, 149, 97, 102,
-        ])
-    }
-
-    fn acc2() -> AccountId {
-        AccountId::new([
-            30, 145, 107, 3, 207, 73, 192, 230, 160, 63, 238, 207, 18, 69, 54, 216, 103, 244, 92,
-            94, 124, 248, 42, 16, 141, 19, 119, 18, 14, 226, 140, 204,
-        ])
     }
 
     fn acc1_sign_key() -> nssa::PrivateKey {
@@ -166,35 +151,24 @@ mod tests {
         nssa::PrivateKey::try_new([2; 32]).unwrap()
     }
 
-    fn initial_state() -> V02State {
-        nssa::V02State::new_with_genesis_accounts(&[(acc1(), 10000), (acc2(), 20000)], &[])
+    fn acc1() -> AccountId {
+        AccountId::from(&PublicKey::new_from_private_key(&acc1_sign_key()))
     }
 
-    fn transfer(amount: u128, nonce: u128, direction: bool) -> NSSATransaction {
-        let from;
-        let to;
-        let sign_key;
-
-        if direction {
-            from = acc1();
-            to = acc2();
-            sign_key = acc1_sign_key();
-        } else {
-            from = acc2();
-            to = acc1();
-            sign_key = acc2_sign_key();
-        }
-
-        common::test_utils::create_transaction_native_token_transfer(
-            from, nonce, to, amount, sign_key,
-        )
+    fn acc2() -> AccountId {
+        AccountId::from(&PublicKey::new_from_private_key(&acc2_sign_key()))
     }
 
     #[test]
     fn test_correct_startup() {
+        let home = tempdir().unwrap();
+
         let storage = IndexerStore::open_db_with_genesis(
-            tempdir().unwrap().as_ref(),
-            Some((genesis_block(), initial_state())),
+            home.as_ref(),
+            Some((
+                genesis_block(),
+                nssa::V02State::new_with_genesis_accounts(&[(acc1(), 10000), (acc2(), 20000)], &[]),
+            )),
         )
         .unwrap();
 
@@ -205,18 +179,34 @@ mod tests {
         assert_eq!(final_id, 1);
     }
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn test_state_transition() {
+        let home = tempdir().unwrap();
+
         let mut storage = IndexerStore::open_db_with_genesis(
-            tempdir().unwrap().as_ref(),
-            Some((genesis_block(), initial_state())),
+            home.as_ref(),
+            Some((
+                genesis_block(),
+                nssa::V02State::new_with_genesis_accounts(&[(acc1(), 10000), (acc2(), 20000)], &[]),
+            )),
         )
         .unwrap();
 
         let mut prev_hash = genesis_block().header.hash;
 
+        let from = acc1();
+        let to = acc2();
+        let sign_key = acc1_sign_key();
+
         for i in 2..10 {
-            let tx = transfer(10, i - 2, true);
+            let tx = common::test_utils::create_transaction_native_token_transfer(
+                from,
+                i - 2,
+                to,
+                10,
+                sign_key.clone(),
+            );
+
             let next_block =
                 common::test_utils::produce_dummy_block(i as u64, Some(prev_hash), vec![tx]);
             prev_hash = next_block.header.hash;
@@ -227,8 +217,8 @@ mod tests {
                 .unwrap();
         }
 
-        let acc1_val = storage.get_account_final(&acc1()).await.unwrap();
-        let acc2_val = storage.get_account_final(&acc2()).await.unwrap();
+        let acc1_val = storage.account_current_state(&acc1()).await.unwrap();
+        let acc2_val = storage.account_current_state(&acc2()).await.unwrap();
 
         assert_eq!(acc1_val.balance, 9920);
         assert_eq!(acc2_val.balance, 20080);
