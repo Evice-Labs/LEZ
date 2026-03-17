@@ -242,7 +242,6 @@ impl RocksDBIO {
         let last_curr_block = self.get_meta_last_block_in_db()?;
         let mut write_batch = WriteBatch::default();
 
-
         write_batch.put_cf(
             &cf_block,
             borsh::to_vec(&block.header.block_id).map_err(|err| {
