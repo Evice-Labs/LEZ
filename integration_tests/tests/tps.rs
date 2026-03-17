@@ -27,7 +27,7 @@ use nssa::{
 };
 use nssa_core::{
     MembershipProof, NullifierPublicKey,
-    account::{AccountWithMetadata, Nonce, data::Data},
+    account::{AccountWithMetadata, data::Data},
     encryption::ViewingPublicKey,
 };
 use tokio::test;
@@ -216,7 +216,7 @@ fn build_privacy_transaction() -> PrivacyPreservingTransaction {
     let sender_pre = AccountWithMetadata::new(
         Account {
             balance: 100,
-            nonce: Nonce(0xdeadbeef),
+            nonce: 0xdead_beef,
             program_owner: program.id(),
             data: Data::default(),
         },
@@ -250,6 +250,7 @@ fn build_privacy_transaction() -> PrivacyPreservingTransaction {
         vec![sender_pre, recipient_pre],
         Program::serialize_instruction(balance_to_move).unwrap(),
         vec![1, 2],
+        vec![0xdead_beef1, 0xdead_beef2],
         vec![
             (sender_npk.clone(), sender_ss),
             (recipient_npk.clone(), recipient_ss),

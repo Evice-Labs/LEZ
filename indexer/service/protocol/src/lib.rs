@@ -14,8 +14,6 @@ use serde_with::{DeserializeFromStr, SerializeDisplay};
 #[cfg(feature = "convert")]
 mod convert;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
-pub struct Nonce(pub u128);
 mod base64 {
     use base64::prelude::{BASE64_STANDARD, Engine as _};
     use serde::{Deserialize as _, Deserializer, Serialize as _, Serializer};
