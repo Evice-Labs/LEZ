@@ -12,7 +12,7 @@ Public accounts are stored on-chain as a visible map from IDs to account states,
 
 ### Programmability and selective privacy
 
-LEZ aims to deliver full programmability in a hybrid public/private model, with the same flexibility and composability as public blockchains. Developers write and deploy programs in LEZ just as they would elsewhere. The protocol automatically supports executions that involve any combination of public and private accounts. From the program’s perspective, all accounts look the same, and privacy is enforced transparently. This lets developers focus on business logic while the system guarantees privacy and correctness.
+LEZ aims to deliver full programmability in a hybrid public/private model, with the same flexibility and composability as public blockchains. Developers write and deploy programs in LEZ without addressing privacy concerns. The protocol automatically supports executions that involve any combination of public and private accounts. From the program’s perspective, all accounts look the same, and privacy is enforced transparently. This lets developers focus on business logic while the system guarantees privacy and correctness.
 
 To our knowledge, this design is unique to LEZ. Other privacy-focused programmable blockchains often require developers to explicitly handle private inputs inside their app logic. In LEZ, privacy is protocol-level: programs do not change, accounts are treated uniformly, and private execution works out of the box.
 
