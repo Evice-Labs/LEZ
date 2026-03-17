@@ -16,6 +16,41 @@ mod convert;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 pub struct Nonce(pub u128);
+mod base64 {
+    use base64::prelude::{BASE64_STANDARD, Engine as _};
+    use serde::{Deserialize as _, Deserializer, Serialize as _, Serializer};
+
+    pub mod arr {
+        use super::{Deserializer, Serializer};
+
+        pub fn serialize<S: Serializer>(v: &[u8], s: S) -> Result<S::Ok, S::Error> {
+            super::serialize(v, s)
+        }
+
+        pub fn deserialize<'de, const N: usize, D: Deserializer<'de>>(
+            d: D,
+        ) -> Result<[u8; N], D::Error> {
+            let vec = super::deserialize(d)?;
+            vec.try_into().map_err(|_bytes| {
+                serde::de::Error::custom(format!("Invalid length, expected {N} bytes"))
+            })
+        }
+    }
+
+    pub fn serialize<S: Serializer>(v: &[u8], s: S) -> Result<S::Ok, S::Error> {
+        let base64 = BASE64_STANDARD.encode(v);
+        String::serialize(&base64, s)
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<u8>, D::Error> {
+        let base64 = String::deserialize(d)?;
+        BASE64_STANDARD
+            .decode(base64.as_bytes())
+            .map_err(serde::de::Error::custom)
+    }
+}
+
+pub type Nonce = u128;
 
 #[derive(
     Debug, Copy, Clone, PartialEq, Eq, Hash, SerializeDisplay, DeserializeFromStr, JsonSchema,
@@ -24,26 +59,43 @@ pub struct ProgramId(pub [u32; 8]);
 
 impl Display for ProgramId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let bytes: Vec<u8> = self.0.iter().flat_map(|n| n.to_be_bytes()).collect();
+        let bytes: Vec<u8> = self.0.iter().flat_map(|n| n.to_le_bytes()).collect();
         write!(f, "{}", bytes.to_base58())
     }
 }
 
+#[derive(Debug)]
+pub enum ProgramIdParseError {
+    InvalidBase58(base58::FromBase58Error),
+    InvalidLength(usize),
+}
+
+impl Display for ProgramIdParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::InvalidBase58(err) => write!(f, "invalid base58: {err:?}"),
+            Self::InvalidLength(len) => {
+                write!(f, "invalid length: expected 32 bytes, got {len}")
+            }
+        }
+    }
+}
+
 impl FromStr for ProgramId {
-    type Err = hex::FromHexError;
+    type Err = ProgramIdParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let bytes = s
             .from_base58()
-            .map_err(|_| hex::FromHexError::InvalidStringLength)?;
+            .map_err(ProgramIdParseError::InvalidBase58)?;
         if bytes.len() != 32 {
-            return Err(hex::FromHexError::InvalidStringLength);
+            return Err(ProgramIdParseError::InvalidLength(bytes.len()));
         }
-        let mut arr = [0u32; 8];
+        let mut arr = [0_u32; 8];
         for (i, chunk) in bytes.chunks_exact(4).enumerate() {
-            arr[i] = u32::from_be_bytes(chunk.try_into().unwrap());
+            arr[i] = u32::from_le_bytes(chunk.try_into().unwrap());
         }
-        Ok(ProgramId(arr))
+        Ok(Self(arr))
     }
 }
 
@@ -73,9 +125,9 @@ impl FromStr for AccountId {
                 bytes.len()
             ));
         }
-        let mut value = [0u8; 32];
+        let mut value = [0_u8; 32];
         value.copy_from_slice(&bytes);
-        Ok(AccountId { value })
+        Ok(Self { value })
     }
 }
 
@@ -122,9 +174,9 @@ impl FromStr for Signature {
     type Err = hex::FromHexError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut bytes = [0u8; 64];
+        let mut bytes = [0_u8; 64];
         hex::decode_to_slice(s, &mut bytes)?;
-        Ok(Signature(bytes))
+        Ok(Self(bytes))
     }
 }
 
@@ -141,12 +193,14 @@ pub enum Transaction {
 }
 
 impl Transaction {
-    /// Get the hash of the transaction
-    pub fn hash(&self) -> &self::HashType {
+    /// Get the hash of the transaction.
+    #[expect(clippy::same_name_method, reason = "This is handy")]
+    #[must_use]
+    pub const fn hash(&self) -> &self::HashType {
         match self {
-            Transaction::Public(tx) => &tx.hash,
-            Transaction::PrivacyPreserving(tx) => &tx.hash,
-            Transaction::ProgramDeployment(tx) => &tx.hash,
+            Self::Public(tx) => &tx.hash,
+            Self::PrivacyPreserving(tx) => &tx.hash,
+            Self::ProgramDeployment(tx) => &tx.hash,
         }
     }
 }
@@ -284,9 +338,9 @@ impl FromStr for HashType {
     type Err = hex::FromHexError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut bytes = [0u8; 32];
+        let mut bytes = [0_u8; 32];
         hex::decode_to_slice(s, &mut bytes)?;
-        Ok(HashType(bytes))
+        Ok(Self(bytes))
     }
 }
 
@@ -302,38 +356,4 @@ pub enum BedrockStatus {
     Pending,
     Safe,
     Finalized,
-}
-
-mod base64 {
-    use base64::prelude::{BASE64_STANDARD, Engine as _};
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
-
-    pub mod arr {
-        use super::*;
-
-        pub fn serialize<S: Serializer>(v: &[u8], s: S) -> Result<S::Ok, S::Error> {
-            super::serialize(v, s)
-        }
-
-        pub fn deserialize<'de, const N: usize, D: Deserializer<'de>>(
-            d: D,
-        ) -> Result<[u8; N], D::Error> {
-            let vec = super::deserialize(d)?;
-            vec.try_into().map_err(|_| {
-                serde::de::Error::custom(format!("Invalid length, expected {N} bytes"))
-            })
-        }
-    }
-
-    pub fn serialize<S: Serializer>(v: &[u8], s: S) -> Result<S::Ok, S::Error> {
-        let base64 = BASE64_STANDARD.encode(v);
-        String::serialize(&base64, s)
-    }
-
-    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<u8>, D::Error> {
-        let base64 = String::deserialize(d)?;
-        BASE64_STANDARD
-            .decode(base64.as_bytes())
-            .map_err(serde::de::Error::custom)
-    }
 }

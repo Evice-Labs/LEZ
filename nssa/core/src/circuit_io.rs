@@ -40,6 +40,8 @@ pub struct PrivacyPreservingCircuitOutput {
 
 #[cfg(feature = "host")]
 impl PrivacyPreservingCircuitOutput {
+    /// Serializes the circuit output to a byte vector.
+    #[must_use]
     pub fn to_bytes(&self) -> Vec<u8> {
         bytemuck::cast_slice(&risc0_zkvm::serde::to_vec(&self).unwrap()).to_vec()
     }
@@ -57,13 +59,13 @@ mod tests {
     };
 
     #[test]
-    fn test_privacy_preserving_circuit_output_to_bytes_is_compatible_with_from_slice() {
+    fn privacy_preserving_circuit_output_to_bytes_is_compatible_with_from_slice() {
         let output = PrivacyPreservingCircuitOutput {
             public_pre_states: vec![
                 AccountWithMetadata::new(
                     Account {
                         program_owner: [1, 2, 3, 4, 5, 6, 7, 8],
-                        balance: 12345678901234567890,
+                        balance: 12_345_678_901_234_567_890,
                         data: b"test data".to_vec().try_into().unwrap(),
                         nonce: Nonce(18446744073709551614),
                     },
@@ -73,7 +75,7 @@ mod tests {
                 AccountWithMetadata::new(
                     Account {
                         program_owner: [9, 9, 9, 8, 8, 8, 7, 7],
-                        balance: 123123123456456567112,
+                        balance: 123_123_123_456_456_567_112,
                         data: b"test data".to_vec().try_into().unwrap(),
                         nonce: Nonce(9999999999999999999999),
                     },
