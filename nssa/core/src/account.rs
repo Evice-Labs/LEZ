@@ -84,13 +84,15 @@ impl BorshDeserialize for Nonce {
     }
 }
 
+pub type Balance = u128;
+
 /// Account to be used both in public and private contexts.
 #[derive(
     Default, Clone, Eq, PartialEq, Serialize, Deserialize, BorshSerialize, BorshDeserialize,
 )]
 pub struct Account {
     pub program_owner: ProgramId,
-    pub balance: u128,
+    pub balance: Balance,
     pub data: Data,
     pub nonce: Nonce,
 }

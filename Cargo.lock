@@ -335,6 +335,7 @@ name = "amm_program"
 version = "0.1.0"
 dependencies = [
  "amm_core",
+ "nssa",
  "nssa_core",
  "token_core",
 ]
@@ -3713,6 +3714,7 @@ dependencies = [
  "serde",
  "serde_json",
  "storage",
+ "tempfile",
  "tokio",
  "url",
 ]
@@ -5530,7 +5532,6 @@ dependencies = [
 name = "nssa"
 version = "0.1.0"
 dependencies = [
- "amm_core",
  "anyhow",
  "borsh",
  "env_logger",
