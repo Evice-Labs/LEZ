@@ -14,19 +14,31 @@ impl NativeTokenTransfer<'_> {
         to: AccountId,
         balance_to_move: u128,
     ) -> Result<SendTxResponse, ExecutionFailureKind> {
-        let Ok(balance) = self.0.get_account_balance(from).await else {
-            return Err(ExecutionFailureKind::SequencerError);
-        };
+        let balance = self
+            .0
+            .get_account_balance(from)
+            .await
+            .map_err(ExecutionFailureKind::SequencerError)?;
 
         if balance >= balance_to_move {
-            let Ok(nonces) = self.0.get_accounts_nonces(vec![from]).await else {
-                return Err(ExecutionFailureKind::SequencerError);
-            };
+            let nonces = self
+                .0
+                .get_accounts_nonces(vec![from])
+                .await
+                .map_err(ExecutionFailureKind::SequencerError)?;
 
             let account_ids = vec![from, to];
             let program_id = Program::authenticated_transfer_program().id();
-            let message =
-                Message::try_new(program_id, account_ids, nonces, balance_to_move).unwrap();
+            let message = Message::try_new(
+                program_id,
+                account_ids,
+                nonces
+                    .iter()
+                    .map(|x| nssa_core::account::Nonce(*x))
+                    .collect(),
+                balance_to_move,
+            )
+            .unwrap();
 
             let signing_key = self.0.storage.user_data.get_pub_account_signing_key(from);
 
@@ -48,14 +60,25 @@ impl NativeTokenTransfer<'_> {
         &self,
         from: AccountId,
     ) -> Result<SendTxResponse, ExecutionFailureKind> {
-        let Ok(nonces) = self.0.get_accounts_nonces(vec![from]).await else {
-            return Err(ExecutionFailureKind::SequencerError);
-        };
+        let nonces = self
+            .0
+            .get_accounts_nonces(vec![from])
+            .await
+            .map_err(ExecutionFailureKind::SequencerError)?;
 
         let instruction: u128 = 0;
         let account_ids = vec![from];
         let program_id = Program::authenticated_transfer_program().id();
-        let message = Message::try_new(program_id, account_ids, nonces, instruction).unwrap();
+        let message = Message::try_new(
+            program_id,
+            account_ids,
+            nonces
+                .iter()
+                .map(|x| nssa_core::account::Nonce(*x))
+                .collect(),
+            instruction,
+        )
+        .unwrap();
 
         let signing_key = self.0.storage.user_data.get_pub_account_signing_key(from);
 

@@ -1,3 +1,8 @@
+#![expect(
+    clippy::tests_outside_test_module,
+    reason = "We don't care about these in tests"
+)]
+
 use std::{path::PathBuf, time::Duration};
 
 use anyhow::Result;
@@ -58,7 +63,7 @@ async fn deploy_and_execute_program() -> Result<()> {
     assert_eq!(post_state_account.program_owner, data_changer.id());
     assert_eq!(post_state_account.balance, 0);
     assert_eq!(post_state_account.data.as_ref(), &[0]);
-    assert_eq!(post_state_account.nonce, 0);
+    assert_eq!(post_state_account.nonce.0, 0);
 
     info!("Successfully deployed and executed program");
 

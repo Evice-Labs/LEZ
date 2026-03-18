@@ -5,22 +5,23 @@ use nssa_core::{
 use secret_holders::{PrivateKeyHolder, SecretSpendingKey, SeedHolder};
 use serde::{Deserialize, Serialize};
 
-pub type PublicAccountSigningKey = [u8; 32];
-
 pub mod ephemeral_key_holder;
 pub mod key_tree;
 pub mod secret_holders;
 
+pub type PublicAccountSigningKey = [u8; 32];
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
-/// Entrypoint to key management
+/// Entrypoint to key management.
 pub struct KeyChain {
     pub secret_spending_key: SecretSpendingKey,
     pub private_key_holder: PrivateKeyHolder,
-    pub nullifier_public_key: NullifierPublicKey,
+    pub nullifer_public_key: NullifierPublicKey,
     pub viewing_public_key: ViewingPublicKey,
 }
 
 impl KeyChain {
+    #[must_use]
     pub fn new_os_random() -> Self {
         // Currently dropping SeedHolder at the end of initialization.
         // Now entirely sure if we need it in the future.
@@ -29,17 +30,18 @@ impl KeyChain {
 
         let private_key_holder = secret_spending_key.produce_private_key_holder(None);
 
-        let nullifier_public_key = private_key_holder.generate_nullifier_public_key();
+        let nullifer_public_key = private_key_holder.generate_nullifier_public_key();
         let viewing_public_key = private_key_holder.generate_viewing_public_key();
 
         Self {
             secret_spending_key,
             private_key_holder,
-            nullifier_public_key,
+            nullifer_public_key,
             viewing_public_key,
         }
     }
 
+    #[must_use]
     pub fn new_mnemonic(passphrase: String) -> Self {
         // Currently dropping SeedHolder at the end of initialization.
         // Not entirely sure if we need it in the future.
@@ -48,25 +50,26 @@ impl KeyChain {
 
         let private_key_holder = secret_spending_key.produce_private_key_holder(None);
 
-        let nullifier_public_key = private_key_holder.generate_nullifier_public_key();
+        let nullifer_public_key = private_key_holder.generate_nullifier_public_key();
         let viewing_public_key = private_key_holder.generate_viewing_public_key();
 
         Self {
             secret_spending_key,
             private_key_holder,
-            nullifier_public_key,
+            nullifer_public_key,
             viewing_public_key,
         }
     }
 
+    #[must_use]
     pub fn calculate_shared_secret_receiver(
         &self,
-        ephemeral_public_key_sender: EphemeralPublicKey,
+        ephemeral_public_key_sender: &EphemeralPublicKey,
         index: Option<u32>,
     ) -> SharedSecretKey {
         SharedSecretKey::new(
             &self.secret_spending_key.generate_viewing_secret_key(index),
-            &ephemeral_public_key_sender,
+            ephemeral_public_key_sender,
         )
     }
 }
@@ -74,9 +77,9 @@ impl KeyChain {
 #[cfg(test)]
 mod tests {
     use aes_gcm::aead::OsRng;
-    use base58::ToBase58;
-    use k256::{AffinePoint, elliptic_curve::group::GroupEncoding};
-    use rand::RngCore;
+    use base58::ToBase58 as _;
+    use k256::{AffinePoint, elliptic_curve::group::GroupEncoding as _};
+    use rand::RngCore as _;
 
     use super::*;
     use crate::key_management::{
@@ -84,19 +87,19 @@ mod tests {
     };
 
     #[test]
-    fn test_new_os_random() {
+    fn new_os_random() {
         // Ensure that a new KeyChain instance can be created without errors.
         let account_id_key_holder = KeyChain::new_os_random();
 
         // Check that key holder fields are initialized with expected types
         assert_ne!(
-            account_id_key_holder.nullifier_public_key.as_ref(),
-            &[0u8; 32]
+            account_id_key_holder.nullifer_public_key.as_ref(),
+            &[0_u8; 32]
         );
     }
 
     #[test]
-    fn test_calculate_shared_secret_receiver() {
+    fn calculate_shared_secret_receiver() {
         let account_id_key_holder = KeyChain::new_os_random();
 
         // Generate a random ephemeral public key sender
@@ -106,7 +109,7 @@ mod tests {
 
         // Calculate shared secret
         let _shared_secret = account_id_key_holder
-            .calculate_shared_secret_receiver(ephemeral_public_key_sender, None);
+            .calculate_shared_secret_receiver(&ephemeral_public_key_sender, None);
     }
 
     #[test]
@@ -116,7 +119,7 @@ mod tests {
 
         let utxo_secret_key_holder = top_secret_key_holder.produce_private_key_holder(None);
 
-        let nullifier_public_key = utxo_secret_key_holder.generate_nullifier_public_key();
+        let nullifer_public_key = utxo_secret_key_holder.generate_nullifier_public_key();
         let viewing_public_key = utxo_secret_key_holder.generate_viewing_public_key();
 
         let pub_account_signing_key = nssa::PrivateKey::new_os_random();
@@ -147,7 +150,7 @@ mod tests {
         println!("Account {:?}", account.value().to_base58());
         println!(
             "Nulifier public key {:?}",
-            hex::encode(nullifier_public_key.to_byte_array())
+            hex::encode(nullifer_public_key.to_byte_array())
         );
         println!(
             "Viewing public key {:?}",
@@ -177,14 +180,14 @@ mod tests {
     }
 
     #[test]
-    fn test_non_trivial_chain_index() {
+    fn non_trivial_chain_index() {
         let keys = account_with_chain_index_2_for_tests();
 
-        let eph_key_holder = EphemeralKeyHolder::new(&keys.nullifier_public_key);
+        let eph_key_holder = EphemeralKeyHolder::new(&keys.nullifer_public_key);
 
         let key_sender = eph_key_holder.calculate_shared_secret_sender(&keys.viewing_public_key);
         let key_receiver = keys.calculate_shared_secret_receiver(
-            eph_key_holder.generate_ephemeral_public_key(),
+            &eph_key_holder.generate_ephemeral_public_key(),
             Some(2),
         );
 

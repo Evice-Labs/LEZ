@@ -4,7 +4,7 @@ use nssa::{AccountId, program::Program};
 use token_core::TokenHolding;
 
 use crate::WalletCore;
-pub struct Amm<'w>(pub &'w WalletCore);
+pub struct Amm<'wallet>(pub &'wallet WalletCore);
 
 impl Amm<'_> {
     pub async fn send_new_definition(
@@ -27,18 +27,18 @@ impl Amm<'_> {
             .0
             .get_account_public(user_holding_a)
             .await
-            .map_err(|_| ExecutionFailureKind::SequencerError)?;
+            .map_err(ExecutionFailureKind::SequencerError)?;
         let user_b_acc = self
             .0
             .get_account_public(user_holding_b)
             .await
-            .map_err(|_| ExecutionFailureKind::SequencerError)?;
+            .map_err(ExecutionFailureKind::SequencerError)?;
 
         let definition_token_a_id = TokenHolding::try_from(&user_a_acc.data)
-            .map_err(|_| ExecutionFailureKind::AccountDataError(user_holding_a))?
+            .map_err(|_err| ExecutionFailureKind::AccountDataError(user_holding_a))?
             .definition_id();
         let definition_token_b_id = TokenHolding::try_from(&user_b_acc.data)
-            .map_err(|_| ExecutionFailureKind::AccountDataError(user_holding_b))?
+            .map_err(|_err| ExecutionFailureKind::AccountDataError(user_holding_b))?
             .definition_id();
 
         let amm_pool =
@@ -61,7 +61,7 @@ impl Amm<'_> {
             .0
             .get_accounts_nonces(vec![user_holding_a, user_holding_b])
             .await
-            .map_err(|_| ExecutionFailureKind::SequencerError)?;
+            .map_err(ExecutionFailureKind::SequencerError)?;
 
         let signing_key_a = self
             .0
@@ -80,7 +80,10 @@ impl Amm<'_> {
         let message = nssa::public_transaction::Message::try_new(
             program.id(),
             account_ids,
-            nonces,
+            nonces
+                .iter()
+                .map(|x| nssa_core::account::Nonce(*x))
+                .collect(),
             instruction,
         )
         .unwrap();
@@ -115,18 +118,18 @@ impl Amm<'_> {
             .0
             .get_account_public(user_holding_a)
             .await
-            .map_err(|_| ExecutionFailureKind::SequencerError)?;
+            .map_err(ExecutionFailureKind::SequencerError)?;
         let user_b_acc = self
             .0
             .get_account_public(user_holding_b)
             .await
-            .map_err(|_| ExecutionFailureKind::SequencerError)?;
+            .map_err(ExecutionFailureKind::SequencerError)?;
 
         let definition_token_a_id = TokenHolding::try_from(&user_a_acc.data)
-            .map_err(|_| ExecutionFailureKind::AccountDataError(user_holding_a))?
+            .map_err(|_err| ExecutionFailureKind::AccountDataError(user_holding_a))?
             .definition_id();
         let definition_token_b_id = TokenHolding::try_from(&user_b_acc.data)
-            .map_err(|_| ExecutionFailureKind::AccountDataError(user_holding_b))?
+            .map_err(|_err| ExecutionFailureKind::AccountDataError(user_holding_b))?
             .definition_id();
 
         let amm_pool =
@@ -149,17 +152,17 @@ impl Amm<'_> {
             .0
             .get_account_public(user_holding_a)
             .await
-            .map_err(|_| ExecutionFailureKind::SequencerError)?;
+            .map_err(ExecutionFailureKind::SequencerError)?;
         let token_holder_acc_b = self
             .0
             .get_account_public(user_holding_b)
             .await
-            .map_err(|_| ExecutionFailureKind::SequencerError)?;
+            .map_err(ExecutionFailureKind::SequencerError)?;
 
         let token_holder_a = TokenHolding::try_from(&token_holder_acc_a.data)
-            .map_err(|_| ExecutionFailureKind::AccountDataError(user_holding_a))?;
+            .map_err(|_err| ExecutionFailureKind::AccountDataError(user_holding_a))?;
         let token_holder_b = TokenHolding::try_from(&token_holder_acc_b.data)
-            .map_err(|_| ExecutionFailureKind::AccountDataError(user_holding_b))?;
+            .map_err(|_err| ExecutionFailureKind::AccountDataError(user_holding_b))?;
 
         if token_holder_a.definition_id() == token_definition_id_in {
             account_id_auth = user_holding_a;
@@ -175,7 +178,7 @@ impl Amm<'_> {
             .0
             .get_accounts_nonces(vec![account_id_auth])
             .await
-            .map_err(|_| ExecutionFailureKind::SequencerError)?;
+            .map_err(ExecutionFailureKind::SequencerError)?;
 
         let signing_key = self
             .0
@@ -187,7 +190,10 @@ impl Amm<'_> {
         let message = nssa::public_transaction::Message::try_new(
             program.id(),
             account_ids,
-            nonces,
+            nonces
+                .iter()
+                .map(|x| nssa_core::account::Nonce(*x))
+                .collect(),
             instruction,
         )
         .unwrap();
@@ -221,18 +227,18 @@ impl Amm<'_> {
             .0
             .get_account_public(user_holding_a)
             .await
-            .map_err(|_| ExecutionFailureKind::SequencerError)?;
+            .map_err(ExecutionFailureKind::SequencerError)?;
         let user_b_acc = self
             .0
             .get_account_public(user_holding_b)
             .await
-            .map_err(|_| ExecutionFailureKind::SequencerError)?;
+            .map_err(ExecutionFailureKind::SequencerError)?;
 
         let definition_token_a_id = TokenHolding::try_from(&user_a_acc.data)
-            .map_err(|_| ExecutionFailureKind::AccountDataError(user_holding_a))?
+            .map_err(|_err| ExecutionFailureKind::AccountDataError(user_holding_a))?
             .definition_id();
         let definition_token_b_id = TokenHolding::try_from(&user_b_acc.data)
-            .map_err(|_| ExecutionFailureKind::AccountDataError(user_holding_b))?
+            .map_err(|_err| ExecutionFailureKind::AccountDataError(user_holding_b))?
             .definition_id();
 
         let amm_pool =
@@ -255,7 +261,7 @@ impl Amm<'_> {
             .0
             .get_accounts_nonces(vec![user_holding_a, user_holding_b])
             .await
-            .map_err(|_| ExecutionFailureKind::SequencerError)?;
+            .map_err(ExecutionFailureKind::SequencerError)?;
 
         let signing_key_a = self
             .0
@@ -274,7 +280,10 @@ impl Amm<'_> {
         let message = nssa::public_transaction::Message::try_new(
             program.id(),
             account_ids,
-            nonces,
+            nonces
+                .iter()
+                .map(|x| nssa_core::account::Nonce(*x))
+                .collect(),
             instruction,
         )
         .unwrap();
@@ -310,18 +319,18 @@ impl Amm<'_> {
             .0
             .get_account_public(user_holding_a)
             .await
-            .map_err(|_| ExecutionFailureKind::SequencerError)?;
+            .map_err(ExecutionFailureKind::SequencerError)?;
         let user_b_acc = self
             .0
             .get_account_public(user_holding_b)
             .await
-            .map_err(|_| ExecutionFailureKind::SequencerError)?;
+            .map_err(ExecutionFailureKind::SequencerError)?;
 
         let definition_token_a_id = TokenHolding::try_from(&user_a_acc.data)
-            .map_err(|_| ExecutionFailureKind::AccountDataError(user_holding_a))?
+            .map_err(|_err| ExecutionFailureKind::AccountDataError(user_holding_a))?
             .definition_id();
         let definition_token_b_id = TokenHolding::try_from(&user_b_acc.data)
-            .map_err(|_| ExecutionFailureKind::AccountDataError(user_holding_b))?
+            .map_err(|_err| ExecutionFailureKind::AccountDataError(user_holding_b))?
             .definition_id();
 
         let amm_pool =
@@ -344,7 +353,7 @@ impl Amm<'_> {
             .0
             .get_accounts_nonces(vec![user_holding_lp])
             .await
-            .map_err(|_| ExecutionFailureKind::SequencerError)?;
+            .map_err(ExecutionFailureKind::SequencerError)?;
 
         let signing_key_lp = self
             .0
@@ -356,7 +365,10 @@ impl Amm<'_> {
         let message = nssa::public_transaction::Message::try_new(
             program.id(),
             account_ids,
-            nonces,
+            nonces
+                .iter()
+                .map(|x| nssa_core::account::Nonce(*x))
+                .collect(),
             instruction,
         )
         .unwrap();
