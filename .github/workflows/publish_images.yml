@@ -2,6 +2,9 @@ name: Publish Docker Images
 
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - "v*"
 
 jobs:
   publish:
@@ -42,6 +45,7 @@ jobs:
         with:
           images: ${{ secrets.DOCKER_REGISTRY }}/${{ github.repository }}/${{ matrix.name }}
           tags: |
+            type=ref,event=tag
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
