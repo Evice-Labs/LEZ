@@ -86,7 +86,7 @@ impl InitialData {
                         balance: 10_000,
                         data: Data::default(),
                         program_owner: DEFAULT_PROGRAM_ID,
-                        nonce: 0,
+                        nonce: 0_u128.into(),
                     },
                 ),
                 (
@@ -95,7 +95,7 @@ impl InitialData {
                         balance: 20_000,
                         data: Data::default(),
                         program_owner: DEFAULT_PROGRAM_ID,
-                        nonce: 0,
+                        nonce: 0_u128.into(),
                     },
                 ),
             ],
