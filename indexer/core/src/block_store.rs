@@ -204,8 +204,11 @@ mod tests {
                 &sign_key,
             );
 
-            let next_block =
-                common::test_utils::produce_dummy_block(u64::try_from(i).unwrap(), Some(prev_hash), vec![tx]);
+            let next_block = common::test_utils::produce_dummy_block(
+                u64::try_from(i).unwrap(),
+                Some(prev_hash),
+                vec![tx],
+            );
             prev_hash = next_block.header.hash;
 
             storage
