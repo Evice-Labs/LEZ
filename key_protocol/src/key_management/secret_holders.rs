@@ -79,6 +79,7 @@ impl SeedHolder {
 
 impl SecretSpendingKey {
     #[must_use]
+    #[expect(clippy::big_endian_bytes, reason = "BIP-032 uses big endian")]
     pub fn generate_nullifier_secret_key(&self, index: Option<u32>) -> NullifierSecretKey {
         const PREFIX: &[u8; 8] = b"LEE/keys";
         const SUFFIX_1: &[u8; 1] = &[1];
@@ -100,6 +101,7 @@ impl SecretSpendingKey {
     }
 
     #[must_use]
+    #[expect(clippy::big_endian_bytes, reason = "BIP-032 uses big endian")]
     pub fn generate_viewing_secret_key(&self, index: Option<u32>) -> ViewingSecretKey {
         const PREFIX: &[u8; 8] = b"LEE/keys";
         const SUFFIX_1: &[u8; 1] = &[2];

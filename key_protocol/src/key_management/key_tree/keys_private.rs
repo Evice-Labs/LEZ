@@ -1,4 +1,4 @@
-use k256::{Scalar, elliptic_curve::PrimeField};
+use k256::{Scalar, elliptic_curve::PrimeField as _};
 use nssa_core::{NullifierPublicKey, encryption::ViewingPublicKey};
 use serde::{Deserialize, Serialize};
 
@@ -12,7 +12,7 @@ use crate::key_management::{
 pub struct ChildKeysPrivate {
     pub value: (KeyChain, nssa::Account),
     pub ccc: [u8; 32],
-    /// Can be [`None`] if root
+    /// Can be [`None`] if root.
     pub cci: Option<u32>,
 }
 
@@ -54,6 +54,7 @@ impl KeyNode for ChildKeysPrivate {
     }
 
     fn nth_child(&self, cci: u32) -> Self {
+        #[expect(clippy::arithmetic_side_effects, reason = "TODO: fix later")]
         let parent_pt =
             Scalar::from_repr(self.value.0.private_key_holder.nullifier_secret_key.into())
                 .expect("Key generated as scalar, must be valid representation")
@@ -63,6 +64,7 @@ impl KeyNode for ChildKeysPrivate {
 
         input.extend_from_slice(b"LEE_seed_priv");
         input.extend_from_slice(&parent_pt.to_bytes());
+        #[expect(clippy::big_endian_bytes, reason = "BIP-032 uses big endian")]
         input.extend_from_slice(&cci.to_be_bytes());
 
         let hash_value = hmac_sha512::HMAC::mac(input, self.ccc);
@@ -113,12 +115,20 @@ impl KeyNode for ChildKeysPrivate {
     }
 }
 
+#[expect(
+    clippy::single_char_lifetime_names,
+    reason = "TODO add meaningful name"
+)]
 impl<'a> From<&'a ChildKeysPrivate> for &'a (KeyChain, nssa::Account) {
     fn from(value: &'a ChildKeysPrivate) -> Self {
         &value.value
     }
 }
 
+#[expect(
+    clippy::single_char_lifetime_names,
+    reason = "TODO add meaningful name"
+)]
 impl<'a> From<&'a mut ChildKeysPrivate> for &'a mut (KeyChain, nssa::Account) {
     fn from(value: &'a mut ChildKeysPrivate) -> Self {
         &mut value.value
@@ -190,7 +200,7 @@ mod tests {
         ];
 
         let root_node = ChildKeysPrivate::root(seed);
-        let child_node = ChildKeysPrivate::nth_child(&root_node, 42u32);
+        let child_node = ChildKeysPrivate::nth_child(&root_node, 42_u32);
 
         let expected_ccc: [u8; 32] = [
             27, 73, 133, 213, 214, 63, 217, 184, 164, 17, 172, 140, 223, 95, 255, 157, 11, 0, 58,
