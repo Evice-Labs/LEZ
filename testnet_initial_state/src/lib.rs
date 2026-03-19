@@ -126,7 +126,7 @@ pub fn initial_priv_accounts_private_keys() -> Vec<PrivateAccountPrivateInitialD
             nullifier_secret_key: NSK_PRIV_ACC_A,
             viewing_secret_key: VSK_PRIV_ACC_A,
         },
-        nullifer_public_key: NullifierPublicKey(NPK_PRIV_ACC_A),
+        nullifier_public_key: NullifierPublicKey(NPK_PRIV_ACC_A),
         viewing_public_key: Secp256k1Point(VPK_PRIV_ACC_A.to_vec()),
     };
 
@@ -136,28 +136,28 @@ pub fn initial_priv_accounts_private_keys() -> Vec<PrivateAccountPrivateInitialD
             nullifier_secret_key: NSK_PRIV_ACC_B,
             viewing_secret_key: VSK_PRIV_ACC_B,
         },
-        nullifer_public_key: NullifierPublicKey(NPK_PRIV_ACC_B),
+        nullifier_public_key: NullifierPublicKey(NPK_PRIV_ACC_B),
         viewing_public_key: Secp256k1Point(VPK_PRIV_ACC_B.to_vec()),
     };
 
     vec![
         PrivateAccountPrivateInitialData {
-            account_id: AccountId::from(&key_chain_1.nullifer_public_key),
+            account_id: AccountId::from(&key_chain_1.nullifier_public_key),
             account: Account {
                 program_owner: DEFAULT_PROGRAM_OWNER,
                 balance: PRIV_ACC_A_INITIAL_BALANCE,
                 data: Data::default(),
-                nonce: 0,
+                nonce: 0.into(),
             },
             key_chain: key_chain_1,
         },
         PrivateAccountPrivateInitialData {
-            account_id: AccountId::from(&key_chain_2.nullifer_public_key),
+            account_id: AccountId::from(&key_chain_2.nullifier_public_key),
             account: Account {
                 program_owner: DEFAULT_PROGRAM_OWNER,
                 balance: PRIV_ACC_B_INITIAL_BALANCE,
                 data: Data::default(),
-                nonce: 0,
+                nonce: 0.into(),
             },
             key_chain: key_chain_2,
         },
@@ -169,7 +169,7 @@ pub fn initial_commitments() -> Vec<PrivateAccountPublicInitialData> {
     initial_priv_accounts_private_keys()
         .into_iter()
         .map(|data| PrivateAccountPublicInitialData {
-            npk: data.key_chain.nullifer_public_key.clone(),
+            npk: data.key_chain.nullifier_public_key.clone(),
             account: data.account,
         })
         .collect()
@@ -302,7 +302,7 @@ mod tests {
                 .key_chain
                 .private_key_holder
                 .generate_nullifier_public_key(),
-            init_private_accs_keys[0].key_chain.nullifer_public_key
+            init_private_accs_keys[0].key_chain.nullifier_public_key
         );
         assert_eq!(
             init_private_accs_keys[0]
@@ -339,7 +339,7 @@ mod tests {
                 .key_chain
                 .private_key_holder
                 .generate_nullifier_public_key(),
-            init_private_accs_keys[1].key_chain.nullifer_public_key
+            init_private_accs_keys[1].key_chain.nullifier_public_key
         );
         assert_eq!(
             init_private_accs_keys[1]
@@ -359,11 +359,11 @@ mod tests {
         );
 
         assert_eq!(
-            init_private_accs_keys[0].key_chain.nullifer_public_key,
+            init_private_accs_keys[0].key_chain.nullifier_public_key,
             init_comms[0].npk
         );
         assert_eq!(
-            init_private_accs_keys[1].key_chain.nullifer_public_key,
+            init_private_accs_keys[1].key_chain.nullifier_public_key,
             init_comms[1].npk
         );
 
@@ -375,7 +375,7 @@ mod tests {
                     program_owner: DEFAULT_PROGRAM_OWNER,
                     balance: PRIV_ACC_A_INITIAL_BALANCE,
                     data: Data::default(),
-                    nonce: 0,
+                    nonce: 0.into(),
                 },
             }
         );
@@ -388,7 +388,7 @@ mod tests {
                     program_owner: DEFAULT_PROGRAM_OWNER,
                     balance: PRIV_ACC_B_INITIAL_BALANCE,
                     data: Data::default(),
-                    nonce: 0,
+                    nonce: 0.into(),
                 },
             }
         );

@@ -141,7 +141,10 @@ impl Token<'_> {
         let message = nssa::public_transaction::Message::try_new(
             program_id,
             account_ids,
-            nonces,
+            nonces
+                .iter()
+                .map(|x| nssa_core::account::Nonce(*x))
+                .collect(),
             instruction,
         )
         .unwrap();
@@ -342,7 +345,10 @@ impl Token<'_> {
         let message = nssa::public_transaction::Message::try_new(
             Program::token().id(),
             account_ids,
-            nonces,
+            nonces
+                .iter()
+                .map(|x| nssa_core::account::Nonce(*x))
+                .collect(),
             instruction,
         )
         .expect("Instruction should serialize");
@@ -472,7 +478,10 @@ impl Token<'_> {
         let message = nssa::public_transaction::Message::try_new(
             Program::token().id(),
             account_ids,
-            nonces,
+            nonces
+                .iter()
+                .map(|x| nssa_core::account::Nonce(*x))
+                .collect(),
             instruction,
         )
         .unwrap();

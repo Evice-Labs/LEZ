@@ -60,11 +60,11 @@ impl InitialData {
 
         let mut private_charlie_key_chain = KeyChain::new_os_random();
         let mut private_charlie_account_id =
-            AccountId::from(&private_charlie_key_chain.nullifer_public_key);
+            AccountId::from(&private_charlie_key_chain.nullifier_public_key);
 
         let mut private_david_key_chain = KeyChain::new_os_random();
         let mut private_david_account_id =
-            AccountId::from(&private_david_key_chain.nullifer_public_key);
+            AccountId::from(&private_david_key_chain.nullifier_public_key);
 
         // Ensure consistent ordering
         if private_charlie_account_id > private_david_account_id {
@@ -87,7 +87,7 @@ impl InitialData {
                         balance: 10_000,
                         data: Data::default(),
                         program_owner: DEFAULT_PROGRAM_ID,
-                        nonce: 0,
+                        nonce: 0_u128.into(),
                     },
                 ),
                 (
@@ -96,7 +96,7 @@ impl InitialData {
                         balance: 20_000,
                         data: Data::default(),
                         program_owner: DEFAULT_PROGRAM_ID,
-                        nonce: 0,
+                        nonce: 0_u128.into(),
                     },
                 ),
             ],
@@ -121,7 +121,7 @@ impl InitialData {
         self.private_accounts
             .iter()
             .map(|(key_chain, account)| PrivateAccountPublicInitialData {
-                npk: key_chain.nullifer_public_key.clone(),
+                npk: key_chain.nullifier_public_key.clone(),
                 account: account.clone(),
             })
             .collect()
@@ -139,7 +139,7 @@ impl InitialData {
                 })
             })
             .chain(self.private_accounts.iter().map(|(key_chain, account)| {
-                let account_id = AccountId::from(&key_chain.nullifer_public_key);
+                let account_id = AccountId::from(&key_chain.nullifier_public_key);
                 InitialAccountData::Private(Box::new(PrivateAccountPrivateInitialData {
                     account_id,
                     account: account.clone(),

@@ -32,7 +32,7 @@ use tokio::io::AsyncWriteExt as _;
 
 use crate::{
     config::{PersistentStorage, WalletConfigOverrides},
-    helperfunctions::{produce_data_for_storage, produce_random_nonces},
+    helperfunctions::produce_data_for_storage,
     poller::TxPoller,
 };
 
@@ -265,7 +265,7 @@ impl WalletCore {
     #[must_use]
     pub fn get_private_account_commitment(&self, account_id: AccountId) -> Option<Commitment> {
         let (keys, account) = self.storage.user_data.get_private_account(account_id)?;
-        Some(Commitment::new(&keys.nullifer_public_key, account))
+        Some(Commitment::new(&keys.nullifier_public_key, account))
     }
 
     /// Poll transactions.
@@ -364,7 +364,6 @@ impl WalletCore {
             pre_states,
             instruction_data,
             acc_manager.visibility_mask().to_vec(),
-            produce_random_nonces(private_account_keys.len()),
             private_account_keys
                 .iter()
                 .map(|keys| (keys.npk.clone(), keys.ssk))
@@ -470,7 +469,7 @@ impl WalletCore {
         let affected_accounts = private_account_key_chains
             .flat_map(|(acc_account_id, key_chain, index)| {
                 let view_tag = EncryptedAccountData::compute_view_tag(
-                    &key_chain.nullifer_public_key,
+                    &key_chain.nullifier_public_key,
                     &key_chain.viewing_public_key,
                 );
 

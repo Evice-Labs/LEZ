@@ -446,7 +446,7 @@ impl AccountWithMetadataForTests {
                     definition_id: IdForTests::token_a_definition_id(),
                     balance: BalanceForTests::user_token_a_balance(),
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: IdForTests::user_token_a_id(),
@@ -462,7 +462,7 @@ impl AccountWithMetadataForTests {
                     definition_id: IdForTests::token_b_definition_id(),
                     balance: BalanceForTests::user_token_b_balance(),
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: IdForTests::user_token_b_id(),
@@ -478,7 +478,7 @@ impl AccountWithMetadataForTests {
                     definition_id: IdForTests::token_a_definition_id(),
                     balance: BalanceForTests::vault_a_reserve_init(),
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: IdForTests::vault_a_id(),
@@ -494,7 +494,7 @@ impl AccountWithMetadataForTests {
                     definition_id: IdForTests::token_b_definition_id(),
                     balance: BalanceForTests::vault_b_reserve_init(),
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: IdForTests::vault_b_id(),
@@ -510,7 +510,7 @@ impl AccountWithMetadataForTests {
                     definition_id: IdForTests::token_a_definition_id(),
                     balance: BalanceForTests::vault_a_reserve_high(),
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: IdForTests::vault_a_id(),
@@ -526,7 +526,7 @@ impl AccountWithMetadataForTests {
                     definition_id: IdForTests::token_b_definition_id(),
                     balance: BalanceForTests::vault_b_reserve_high(),
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: IdForTests::vault_b_id(),
@@ -542,7 +542,7 @@ impl AccountWithMetadataForTests {
                     definition_id: IdForTests::token_a_definition_id(),
                     balance: BalanceForTests::vault_a_reserve_low(),
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: IdForTests::vault_a_id(),
@@ -558,7 +558,7 @@ impl AccountWithMetadataForTests {
                     definition_id: IdForTests::token_b_definition_id(),
                     balance: BalanceForTests::vault_b_reserve_low(),
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: IdForTests::vault_b_id(),
@@ -574,7 +574,7 @@ impl AccountWithMetadataForTests {
                     definition_id: IdForTests::token_a_definition_id(),
                     balance: 0,
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: IdForTests::vault_a_id(),
@@ -590,7 +590,7 @@ impl AccountWithMetadataForTests {
                     definition_id: IdForTests::token_b_definition_id(),
                     balance: 0,
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: IdForTests::vault_b_id(),
@@ -607,7 +607,7 @@ impl AccountWithMetadataForTests {
                     total_supply: BalanceForTests::lp_supply_init(),
                     metadata_id: None,
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: IdForTests::token_lp_definition_id(),
@@ -624,7 +624,7 @@ impl AccountWithMetadataForTests {
                     total_supply: BalanceForTests::lp_supply_init(),
                     metadata_id: None,
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: IdForTests::vault_a_id(),
@@ -640,7 +640,7 @@ impl AccountWithMetadataForTests {
                     definition_id: IdForTests::token_lp_definition_id(),
                     balance: 0,
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: IdForTests::user_token_lp_id(),
@@ -656,7 +656,7 @@ impl AccountWithMetadataForTests {
                     definition_id: IdForTests::token_lp_definition_id(),
                     balance: BalanceForTests::user_token_lp_balance(),
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: IdForTests::user_token_lp_id(),
@@ -680,7 +680,7 @@ impl AccountWithMetadataForTests {
                     fees: 0_u128,
                     active: true,
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: IdForTests::pool_definition_id(),
@@ -704,7 +704,7 @@ impl AccountWithMetadataForTests {
                     fees: 0_u128,
                     active: true,
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: IdForTests::pool_definition_id(),
@@ -728,7 +728,7 @@ impl AccountWithMetadataForTests {
                     fees: 0_u128,
                     active: true,
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: IdForTests::pool_definition_id(),
@@ -752,7 +752,7 @@ impl AccountWithMetadataForTests {
                     fees: 0_u128,
                     active: true,
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: IdForTests::pool_definition_id(),
@@ -776,7 +776,7 @@ impl AccountWithMetadataForTests {
                     fees: 0_u128,
                     active: true,
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: IdForTests::pool_definition_id(),
@@ -800,7 +800,7 @@ impl AccountWithMetadataForTests {
                     fees: 0_u128,
                     active: true,
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: IdForTests::pool_definition_id(),
@@ -824,7 +824,7 @@ impl AccountWithMetadataForTests {
                     fees: 0_u128,
                     active: true,
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: IdForTests::pool_definition_id(),
@@ -848,7 +848,7 @@ impl AccountWithMetadataForTests {
                     fees: 0_u128,
                     active: true,
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: IdForTests::pool_definition_id(),
@@ -872,7 +872,7 @@ impl AccountWithMetadataForTests {
                     fees: 0_u128,
                     active: true,
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: IdForTests::pool_definition_id(),
@@ -896,7 +896,7 @@ impl AccountWithMetadataForTests {
                     fees: 0_u128,
                     active: true,
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: IdForTests::pool_definition_id(),
@@ -920,7 +920,7 @@ impl AccountWithMetadataForTests {
                     fees: 0_u128,
                     active: false,
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: IdForTests::pool_definition_id(),
@@ -944,7 +944,7 @@ impl AccountWithMetadataForTests {
                     fees: 0_u128,
                     active: false,
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: AccountId::new([4; 32]),
@@ -960,7 +960,7 @@ impl AccountWithMetadataForTests {
                     definition_id: IdForTests::token_a_definition_id(),
                     balance: BalanceForTests::vault_a_reserve_init(),
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: AccountId::new([4; 32]),
@@ -976,7 +976,7 @@ impl AccountWithMetadataForTests {
                     definition_id: IdForTests::token_b_definition_id(),
                     balance: BalanceForTests::vault_b_reserve_init(),
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: AccountId::new([4; 32]),
@@ -1000,7 +1000,7 @@ impl AccountWithMetadataForTests {
                     fees: 0_u128,
                     active: true,
                 }),
-                nonce: 0,
+                nonce: 0_u128.into(),
             },
             is_authorized: true,
             account_id: IdForTests::pool_definition_id(),
@@ -1239,7 +1239,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_a_definition_id(),
                 balance: BalanceForExeTests::user_token_a_holding_init(),
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1251,7 +1251,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_b_definition_id(),
                 balance: BalanceForExeTests::user_token_b_holding_init(),
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1271,7 +1271,7 @@ impl AccountsForExeTests {
                 fees: 0_u128,
                 active: true,
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1284,7 +1284,7 @@ impl AccountsForExeTests {
                 total_supply: BalanceForExeTests::token_a_supply(),
                 metadata_id: None,
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1297,7 +1297,7 @@ impl AccountsForExeTests {
                 total_supply: BalanceForExeTests::token_b_supply(),
                 metadata_id: None,
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1310,7 +1310,7 @@ impl AccountsForExeTests {
                 total_supply: BalanceForExeTests::token_lp_supply(),
                 metadata_id: None,
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1322,7 +1322,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_a_definition_id(),
                 balance: BalanceForExeTests::vault_a_balance_init(),
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1334,7 +1334,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_b_definition_id(),
                 balance: BalanceForExeTests::vault_b_balance_init(),
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1346,7 +1346,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_lp_definition_id(),
                 balance: BalanceForExeTests::user_token_lp_holding_init(),
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1358,7 +1358,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_a_definition_id(),
                 balance: BalanceForExeTests::vault_a_balance_swap_1(),
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1370,7 +1370,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_b_definition_id(),
                 balance: BalanceForExeTests::vault_b_balance_swap_1(),
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1390,7 +1390,7 @@ impl AccountsForExeTests {
                 fees: 0_u128,
                 active: true,
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1402,7 +1402,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_a_definition_id(),
                 balance: BalanceForExeTests::user_token_a_holding_swap_1(),
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1414,7 +1414,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_b_definition_id(),
                 balance: BalanceForExeTests::user_token_b_holding_swap_1(),
             }),
-            nonce: 1,
+            nonce: 1_u128.into(),
         }
     }
 
@@ -1426,7 +1426,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_a_definition_id(),
                 balance: BalanceForExeTests::vault_a_balance_swap_2(),
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1438,7 +1438,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_b_definition_id(),
                 balance: BalanceForExeTests::vault_b_balance_swap_2(),
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1458,7 +1458,7 @@ impl AccountsForExeTests {
                 fees: 0_u128,
                 active: true,
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1470,7 +1470,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_a_definition_id(),
                 balance: BalanceForExeTests::user_token_a_holding_swap_2(),
             }),
-            nonce: 1,
+            nonce: 1_u128.into(),
         }
     }
 
@@ -1482,7 +1482,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_b_definition_id(),
                 balance: BalanceForExeTests::user_token_b_holding_swap_2(),
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1494,7 +1494,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_a_definition_id(),
                 balance: BalanceForExeTests::vault_a_balance_add(),
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1506,7 +1506,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_b_definition_id(),
                 balance: BalanceForExeTests::vault_b_balance_add(),
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1526,7 +1526,7 @@ impl AccountsForExeTests {
                 fees: 0_u128,
                 active: true,
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1538,7 +1538,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_a_definition_id(),
                 balance: BalanceForExeTests::user_token_a_holding_add(),
             }),
-            nonce: 1,
+            nonce: 1_u128.into(),
         }
     }
 
@@ -1550,7 +1550,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_b_definition_id(),
                 balance: BalanceForExeTests::user_token_b_holding_add(),
             }),
-            nonce: 1,
+            nonce: 1_u128.into(),
         }
     }
 
@@ -1562,7 +1562,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_lp_definition_id(),
                 balance: BalanceForExeTests::user_token_lp_holding_add(),
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1575,7 +1575,7 @@ impl AccountsForExeTests {
                 total_supply: BalanceForExeTests::token_lp_supply_add(),
                 metadata_id: None,
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1587,7 +1587,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_a_definition_id(),
                 balance: BalanceForExeTests::vault_a_balance_remove(),
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1599,7 +1599,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_b_definition_id(),
                 balance: BalanceForExeTests::vault_b_balance_remove(),
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1619,7 +1619,7 @@ impl AccountsForExeTests {
                 fees: 0_u128,
                 active: true,
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1631,7 +1631,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_a_definition_id(),
                 balance: BalanceForExeTests::user_token_a_holding_remove(),
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1643,7 +1643,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_b_definition_id(),
                 balance: BalanceForExeTests::user_token_b_holding_remove(),
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1655,7 +1655,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_lp_definition_id(),
                 balance: BalanceForExeTests::user_token_lp_holding_remove(),
             }),
-            nonce: 1,
+            nonce: 1_u128.into(),
         }
     }
 
@@ -1668,7 +1668,7 @@ impl AccountsForExeTests {
                 total_supply: BalanceForExeTests::token_lp_supply_remove(),
                 metadata_id: None,
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1681,7 +1681,7 @@ impl AccountsForExeTests {
                 total_supply: 0,
                 metadata_id: None,
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1693,7 +1693,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_a_definition_id(),
                 balance: 0,
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1705,7 +1705,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_b_definition_id(),
                 balance: 0,
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1725,7 +1725,7 @@ impl AccountsForExeTests {
                 fees: 0_u128,
                 active: false,
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1737,7 +1737,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_a_definition_id(),
                 balance: BalanceForExeTests::user_token_a_holding_new_definition(),
             }),
-            nonce: 1,
+            nonce: 1_u128.into(),
         }
     }
 
@@ -1749,7 +1749,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_b_definition_id(),
                 balance: BalanceForExeTests::user_token_b_holding_new_definition(),
             }),
-            nonce: 1,
+            nonce: 1_u128.into(),
         }
     }
 
@@ -1761,7 +1761,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_lp_definition_id(),
                 balance: BalanceForExeTests::lp_supply_init(),
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1774,7 +1774,7 @@ impl AccountsForExeTests {
                 total_supply: BalanceForExeTests::lp_supply_init(),
                 metadata_id: None,
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1794,7 +1794,7 @@ impl AccountsForExeTests {
                 fees: 0_u128,
                 active: true,
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 
@@ -1806,7 +1806,7 @@ impl AccountsForExeTests {
                 definition_id: IdForExeTests::token_lp_definition_id(),
                 balance: 0,
             }),
-            nonce: 0,
+            nonce: 0_u128.into(),
         }
     }
 }
@@ -2730,7 +2730,7 @@ fn simple_amm_remove() {
             IdForExeTests::user_token_b_id(),
             IdForExeTests::user_token_lp_id(),
         ],
-        vec![0],
+        vec![0_u128.into()],
         instruction,
     )
     .unwrap();
@@ -2808,7 +2808,7 @@ fn simple_amm_new_definition_inactive_initialized_pool_and_uninit_user_lp() {
             IdForExeTests::user_token_b_id(),
             IdForExeTests::user_token_lp_id(),
         ],
-        vec![0, 0],
+        vec![0_u128.into(), 0_u128.into()],
         instruction,
     )
     .unwrap();
@@ -2893,7 +2893,7 @@ fn simple_amm_new_definition_inactive_initialized_pool_init_user_lp() {
             IdForExeTests::user_token_b_id(),
             IdForExeTests::user_token_lp_id(),
         ],
-        vec![0, 0],
+        vec![0_u128.into(), 0_u128.into()],
         instruction,
     )
     .unwrap();
@@ -2966,7 +2966,7 @@ fn simple_amm_new_definition_uninitialized_pool() {
             IdForExeTests::user_token_b_id(),
             IdForExeTests::user_token_lp_id(),
         ],
-        vec![0, 0],
+        vec![0_u128.into(), 0_u128.into()],
         instruction,
     )
     .unwrap();
@@ -3029,7 +3029,7 @@ fn simple_amm_add() {
             IdForExeTests::user_token_b_id(),
             IdForExeTests::user_token_lp_id(),
         ],
-        vec![0, 0],
+        vec![0_u128.into(), 0_u128.into()],
         instruction,
     )
     .unwrap();
@@ -3090,7 +3090,7 @@ fn simple_amm_swap_1() {
             IdForExeTests::user_token_a_id(),
             IdForExeTests::user_token_b_id(),
         ],
-        vec![0],
+        vec![0_u128.into()],
         instruction,
     )
     .unwrap();
@@ -3141,7 +3141,7 @@ fn simple_amm_swap_2() {
             IdForExeTests::user_token_a_id(),
             IdForExeTests::user_token_b_id(),
         ],
-        vec![0],
+        vec![0_u128.into()],
         instruction,
     )
     .unwrap();
