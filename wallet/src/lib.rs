@@ -265,7 +265,7 @@ impl WalletCore {
     #[must_use]
     pub fn get_private_account_commitment(&self, account_id: AccountId) -> Option<Commitment> {
         let (keys, account) = self.storage.user_data.get_private_account(account_id)?;
-        Some(Commitment::new(&keys.nullifer_public_key, account))
+        Some(Commitment::new(&keys.nullifier_public_key, account))
     }
 
     /// Poll transactions.
@@ -469,7 +469,7 @@ impl WalletCore {
         let affected_accounts = private_account_key_chains
             .flat_map(|(acc_account_id, key_chain, index)| {
                 let view_tag = EncryptedAccountData::compute_view_tag(
-                    &key_chain.nullifer_public_key,
+                    &key_chain.nullifier_public_key,
                     &key_chain.viewing_public_key,
                 );
 
