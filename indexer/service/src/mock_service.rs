@@ -13,7 +13,7 @@ use indexer_service_protocol::{
     CommitmentSetDigest, Data, EncryptedAccountData, HashType, MantleMsgId,
     PrivacyPreservingMessage, PrivacyPreservingTransaction, ProgramDeploymentMessage,
     ProgramDeploymentTransaction, ProgramId, PublicMessage, PublicTransaction, Signature,
-    Transaction, WitnessSet, ValidityWindow
+    Transaction, ValidityWindow, WitnessSet,
 };
 use jsonrpsee::{core::SubscriptionResult, types::ErrorObjectOwned};
 

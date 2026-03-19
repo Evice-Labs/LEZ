@@ -1,7 +1,11 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    account::{Account, AccountWithMetadata}, encryption::Ciphertext, program::{ProgramId, ProgramOutput, ValidityWindow}, Commitment, CommitmentSetDigest, MembershipProof, Nullifier, NullifierPublicKey, NullifierSecretKey, SharedSecretKey
+    Commitment, CommitmentSetDigest, MembershipProof, Nullifier, NullifierPublicKey,
+    NullifierSecretKey, SharedSecretKey,
+    account::{Account, AccountWithMetadata},
+    encryption::Ciphertext,
+    program::{ProgramId, ProgramOutput, ValidityWindow},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -32,7 +36,7 @@ pub struct PrivacyPreservingCircuitOutput {
     pub ciphertexts: Vec<Ciphertext>,
     pub new_commitments: Vec<Commitment>,
     pub new_nullifiers: Vec<(Nullifier, CommitmentSetDigest)>,
-    pub validity_window: ValidityWindow
+    pub validity_window: ValidityWindow,
 }
 
 #[cfg(feature = "host")]

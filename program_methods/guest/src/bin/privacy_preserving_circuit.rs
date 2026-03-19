@@ -53,7 +53,6 @@ impl ExecutionState {
         };
         let mut chained_calls = VecDeque::from_iter([(initial_call, None)]);
 
-
         let mut program_outputs_iter = program_outputs.into_iter();
         let mut chain_calls_counter = 0;
 
