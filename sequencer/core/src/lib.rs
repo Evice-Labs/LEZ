@@ -15,6 +15,7 @@ use logos_blockchain_key_management_system_service::keys::{ED25519_SECRET_KEY_SI
 use mempool::{MemPool, MemPoolHandle};
 #[cfg(feature = "mock")]
 pub use mock::SequencerCoreWithMockClients;
+pub use storage::error::DbError;
 
 use crate::{
     block_settlement_client::{BlockSettlementClient, BlockSettlementClientTrait, MsgId},
@@ -392,14 +393,12 @@ mod tests {
 
         SequencerConfig {
             home,
-            override_rust_log: Some("info".to_owned()),
             genesis_id: 1,
             is_genesis_random: false,
             max_num_tx_in_block: 10,
             max_block_size: bytesize::ByteSize::mib(1),
             mempool_max_size: 10000,
             block_create_timeout: Duration::from_secs(1),
-            port: 8080,
             initial_accounts,
             initial_commitments: vec![],
             signing_key: *sequencer_sign_key_for_testing().value(),
@@ -480,7 +479,6 @@ mod tests {
 
         assert_eq!(sequencer.chain_height, config.genesis_id);
         assert_eq!(sequencer.sequencer_config.max_num_tx_in_block, 10);
-        assert_eq!(sequencer.sequencer_config.port, 8080);
 
         let acc1_account_id = config.initial_accounts[0].account_id;
         let acc2_account_id = config.initial_accounts[1].account_id;
@@ -698,6 +696,7 @@ mod tests {
         let block = sequencer
             .store
             .get_block_at_id(sequencer.chain_height)
+            .unwrap()
             .unwrap();
 
         // Only one should be included in the block
@@ -725,6 +724,7 @@ mod tests {
         let block = sequencer
             .store
             .get_block_at_id(sequencer.chain_height)
+            .unwrap()
             .unwrap();
         assert_eq!(block.body.transactions, vec![tx.clone()]);
 
@@ -736,6 +736,7 @@ mod tests {
         let block = sequencer
             .store
             .get_block_at_id(sequencer.chain_height)
+            .unwrap()
             .unwrap();
         assert!(block.body.transactions.is_empty());
     }
@@ -770,6 +771,7 @@ mod tests {
             let block = sequencer
                 .store
                 .get_block_at_id(sequencer.chain_height)
+                .unwrap()
                 .unwrap();
             assert_eq!(block.body.transactions, vec![tx.clone()]);
         }
@@ -888,6 +890,7 @@ mod tests {
         let new_block = sequencer
             .store
             .get_block_at_id(sequencer.chain_height)
+            .unwrap()
             .unwrap();
 
         assert_eq!(

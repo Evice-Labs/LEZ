@@ -84,7 +84,7 @@ pub fn TransactionPage() -> impl IntoView {
                                     } = witness_set;
 
                                     let program_id_str = program_id.to_string();
-                                    let proof_len = proof.0.len();
+                                    let proof_len = proof.map_or(0, |p| p.0.len());
                                     let signatures_count = signatures_and_public_keys.len();
 
                                     view! {
@@ -190,7 +190,7 @@ pub fn TransactionPage() -> impl IntoView {
                                         (None, None) => "unbounded".to_owned(),
                                     };
 
-                                    let proof_len = proof.0.len();
+                                    let proof_len = proof.map_or(0, |p| p.0.len());
                                     view! {
                                         <div class="transaction-details">
                                             <h2>"Privacy-Preserving Transaction Details"</h2>
