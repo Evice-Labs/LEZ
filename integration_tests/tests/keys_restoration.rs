@@ -4,9 +4,9 @@
     reason = "We don't care about these in tests"
 )]
 
-use std::{str::FromStr, time::Duration};
+use std::{str::FromStr as _, time::Duration};
 
-use anyhow::{Context, Result};
+use anyhow::{Context as _, Result};
 use integration_tests::{
     TIME_TO_WAIT_FOR_BLOCK_SECONDS, TestContext, fetch_privacy_preserving_tx,
     format_private_account_id, format_public_account_id, verify_commitment_is_in_state,
@@ -96,7 +96,7 @@ async fn sync_private_account_with_non_zero_chain_index() -> Result<()> {
     assert_eq!(tx.message.new_commitments[0], new_commitment1);
 
     assert_eq!(tx.message.new_commitments.len(), 2);
-    for commitment in tx.message.new_commitments.into_iter() {
+    for commitment in tx.message.new_commitments {
         assert!(verify_commitment_is_in_state(commitment, ctx.sequencer_client()).await);
     }
 
