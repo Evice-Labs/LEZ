@@ -302,7 +302,7 @@ impl From<nssa::privacy_preserving_transaction::message::Message> for PrivacyPre
                 .into_iter()
                 .map(|(n, d)| (n.into(), d.into()))
                 .collect(),
-            validity_window: ValidityWindow((validity_window.from(), validity_window.to())),
+            validity_window: validity_window.into(),
         }
     }
 }
@@ -341,7 +341,6 @@ impl TryFrom<PrivacyPreservingMessage> for nssa::privacy_preserving_transaction:
                 .map(|(n, d)| (n.into(), d.into()))
                 .collect(),
             validity_window: validity_window
-                .0
                 .try_into()
                 .map_err(|e| nssa::error::NssaError::InvalidInput(format!("{e}")))?,
         })
@@ -686,5 +685,23 @@ impl From<common::HashType> for HashType {
 impl From<HashType> for common::HashType {
     fn from(value: HashType) -> Self {
         Self(value.0)
+    }
+}
+
+// ============================================================================
+// ValidityWindow conversions
+// ============================================================================
+
+impl From<nssa_core::program::ValidityWindow> for ValidityWindow {
+    fn from(value: nssa_core::program::ValidityWindow) -> Self {
+        Self((value.from(), value.to()))
+    }
+}
+
+impl TryFrom<ValidityWindow> for nssa_core::program::ValidityWindow {
+    type Error = nssa_core::program::InvalidWindow;
+
+    fn try_from(value: ValidityWindow) -> Result<Self, Self::Error> {
+        value.0.try_into()
     }
 }
