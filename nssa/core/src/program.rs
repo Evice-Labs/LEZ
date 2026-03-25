@@ -195,32 +195,17 @@ impl ValidityWindow {
 
     /// Inclusive lower bound. `None` means the window starts at the beginning of the chain.
     #[must_use]
-    pub const fn from(&self) -> Option<BlockId> {
+    pub const fn start(&self) -> Option<BlockId> {
         self.from
     }
 
     /// Exclusive upper bound. `None` means the window has no expiry.
     #[must_use]
-    pub const fn to(&self) -> Option<BlockId> {
+    pub const fn end(&self) -> Option<BlockId> {
         self.to
     }
-
-    /// Sets the inclusive lower bound. Returns `Err` if the updated window would be empty or
-    /// inverted.
-    pub fn set_from(&mut self, id: Option<BlockId>) -> Result<(), InvalidWindow> {
-        let prev = self.from;
-        self.from = id;
-        self.check_window().inspect_err(|_| self.from = prev)
-    }
-
-    /// Sets the exclusive upper bound. Returns `Err` if the updated window would be empty or
-    /// inverted.
-    pub fn set_to(&mut self, id: Option<BlockId>) -> Result<(), InvalidWindow> {
-        let prev = self.to;
-        self.to = id;
-        self.check_window().inspect_err(|_| self.to = prev)
-    }
 }
+
 impl TryFrom<(Option<BlockId>, Option<BlockId>)> for ValidityWindow {
     type Error = InvalidWindow;
 
@@ -289,7 +274,6 @@ pub struct ProgramOutput {
 }
 
 impl ProgramOutput {
-    #[must_use]
     pub const fn new(
         instruction_data: InstructionData,
         pre_states: Vec<AccountWithMetadata>,
@@ -308,24 +292,12 @@ impl ProgramOutput {
         env::commit(&self);
     }
 
-    #[must_use]
     pub fn with_chained_calls(mut self, chained_calls: Vec<ChainedCall>) -> Self {
         self.chained_calls = chained_calls;
         self
     }
 
-    pub fn valid_from_id(mut self, id: Option<BlockId>) -> Result<Self, InvalidWindow> {
-        self.validity_window.set_from(id)?;
-        Ok(self)
-    }
-
-    pub fn valid_until_id(mut self, id: Option<BlockId>) -> Result<Self, InvalidWindow> {
-        self.validity_window.set_to(id)?;
-        Ok(self)
-    }
-
     /// Sets the validity window from an infallible range conversion (`1..`, `..5`, `..`).
-    #[must_use]
     pub fn with_validity_window<W: Into<ValidityWindow>>(mut self, window: W) -> Self {
         self.validity_window = window.into();
         self
@@ -539,22 +511,22 @@ mod tests {
     #[test]
     fn validity_window_getters_match_construction() {
         let w: ValidityWindow = (Some(3), Some(7)).try_into().unwrap();
-        assert_eq!(w.from(), Some(3));
-        assert_eq!(w.to(), Some(7));
+        assert_eq!(w.start(), Some(3));
+        assert_eq!(w.end(), Some(7));
     }
 
     #[test]
     fn validity_window_getters_for_unbounded() {
         let w = ValidityWindow::new_unbounded();
-        assert_eq!(w.from(), None);
-        assert_eq!(w.to(), None);
+        assert_eq!(w.start(), None);
+        assert_eq!(w.end(), None);
     }
 
     #[test]
     fn validity_window_from_range() {
         let w = ValidityWindow::try_from(5_u64..10).unwrap();
-        assert_eq!(w.from(), Some(5));
-        assert_eq!(w.to(), Some(10));
+        assert_eq!(w.start(), Some(5));
+        assert_eq!(w.end(), Some(10));
     }
 
     #[test]
@@ -564,28 +536,30 @@ mod tests {
 
     #[test]
     fn validity_window_from_range_inverted_is_invalid() {
-        assert!(ValidityWindow::try_from(10_u64..5).is_err());
+        let from = 10_u64;
+        let to = 5_u64;
+        assert!(ValidityWindow::try_from(from..to).is_err());
     }
 
     #[test]
     fn validity_window_from_range_from() {
         let w: ValidityWindow = (5_u64..).into();
-        assert_eq!(w.from(), Some(5));
-        assert_eq!(w.to(), None);
+        assert_eq!(w.start(), Some(5));
+        assert_eq!(w.end(), None);
     }
 
     #[test]
     fn validity_window_from_range_to() {
         let w: ValidityWindow = (..10_u64).into();
-        assert_eq!(w.from(), None);
-        assert_eq!(w.to(), Some(10));
+        assert_eq!(w.start(), None);
+        assert_eq!(w.end(), Some(10));
     }
 
     #[test]
     fn validity_window_from_range_full() {
         let w: ValidityWindow = (..).into();
-        assert_eq!(w.from(), None);
-        assert_eq!(w.to(), None);
+        assert_eq!(w.start(), None);
+        assert_eq!(w.end(), None);
     }
 
     #[test]
@@ -593,22 +567,22 @@ mod tests {
         let output = ProgramOutput::new(vec![], vec![], vec![])
             .try_with_validity_window(10_u64..100)
             .unwrap();
-        assert_eq!(output.validity_window.from(), Some(10));
-        assert_eq!(output.validity_window.to(), Some(100));
+        assert_eq!(output.validity_window.start(), Some(10));
+        assert_eq!(output.validity_window.end(), Some(100));
     }
 
     #[test]
     fn program_output_with_validity_window_range_from() {
         let output = ProgramOutput::new(vec![], vec![], vec![]).with_validity_window(10_u64..);
-        assert_eq!(output.validity_window.from(), Some(10));
-        assert_eq!(output.validity_window.to(), None);
+        assert_eq!(output.validity_window.start(), Some(10));
+        assert_eq!(output.validity_window.end(), None);
     }
 
     #[test]
     fn program_output_with_validity_window_range_to() {
         let output = ProgramOutput::new(vec![], vec![], vec![]).with_validity_window(..100_u64);
-        assert_eq!(output.validity_window.from(), None);
-        assert_eq!(output.validity_window.to(), Some(100));
+        assert_eq!(output.validity_window.start(), None);
+        assert_eq!(output.validity_window.end(), Some(100));
     }
 
     #[test]

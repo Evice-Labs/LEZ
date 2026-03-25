@@ -694,7 +694,7 @@ impl From<HashType> for common::HashType {
 
 impl From<nssa_core::program::ValidityWindow> for ValidityWindow {
     fn from(value: nssa_core::program::ValidityWindow) -> Self {
-        Self((value.from(), value.to()))
+        Self((value.start(), value.end()))
     }
 }
 
