@@ -1,8 +1,8 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 
 use crate::{
-    error::DbError,
-    indexer::{CF_META_NAME, DB_META_LAST_BLOCK_IN_DB_KEY, DbResult, SimpleStorableCell},
+    CF_META_NAME, DB_META_LAST_BLOCK_IN_DB_KEY, DbResult, error::DbError,
+    storable_cell::SimpleStorableCell,
 };
 
 #[derive(Debug)]

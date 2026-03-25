@@ -6,40 +6,13 @@ use rocksdb::{
     BoundColumnFamily, ColumnFamilyDescriptor, DBWithThreadMode, MultiThreaded, Options, WriteBatch,
 };
 
-use crate::error::DbError;
-
-/// Maximal size of stored blocks in base.
-///
-/// Used to control db size.
-///
-/// Currently effectively unbounded.
-pub const BUFF_SIZE_ROCKSDB: usize = usize::MAX;
-
-/// Size of stored blocks cache in memory.
-///
-/// Keeping small to not run out of memory.
-pub const CACHE_SIZE: usize = 1000;
-
-/// Key base for storing metainformation about id of first block in db.
-pub const DB_META_FIRST_BLOCK_IN_DB_KEY: &str = "first_block_in_db";
-/// Key base for storing metainformation about id of last current block in db.
-pub const DB_META_LAST_BLOCK_IN_DB_KEY: &str = "last_block_in_db";
-/// Key base for storing metainformation which describe if first block has been set.
-pub const DB_META_FIRST_BLOCK_SET_KEY: &str = "first_block_set";
-/// Key base for storing metainformation about the last finalized block on Bedrock.
-pub const DB_META_LAST_FINALIZED_BLOCK_ID: &str = "last_finalized_block_id";
-/// Key base for storing metainformation about the latest block meta.
-pub const DB_META_LATEST_BLOCK_META_KEY: &str = "latest_block_meta";
-
-/// Key base for storing the NSSA state.
-pub const DB_NSSA_STATE_KEY: &str = "nssa_state";
-
-/// Name of block column family.
-pub const CF_BLOCK_NAME: &str = "cf_block";
-/// Name of meta column family.
-pub const CF_META_NAME: &str = "cf_meta";
-/// Name of state column family.
-pub const CF_NSSA_STATE_NAME: &str = "cf_nssa_state";
+use crate::{
+    CF_BLOCK_NAME, CF_META_NAME, CF_NSSA_STATE_NAME, DB_META_FIRST_BLOCK_IN_DB_KEY,
+    DB_META_FIRST_BLOCK_SET_KEY, DB_META_LAST_FINALIZED_BLOCK_ID, DB_META_LATEST_BLOCK_META_KEY,
+    DB_NSSA_STATE_KEY,
+    error::DbError,
+    storable_cell::{SimpleStorableCell, cells::meta_shared::LastBlockCell},
+};
 
 pub type DbResult<T> = Result<T, DbError>;
 
@@ -119,6 +92,29 @@ impl RocksDBIO {
         self.db.cf_handle(CF_NSSA_STATE_NAME).unwrap()
     }
 
+    // Generics
+
+    fn get<T: SimpleStorableCell>(&self) -> DbResult<T> {
+        T::get(&self.db)
+    }
+
+    #[expect(unused, reason = "Unused")]
+    fn get_opt<T: SimpleStorableCell>(&self) -> DbResult<Option<T>> {
+        T::get_opt(&self.db)
+    }
+
+    fn put<T: SimpleStorableCell>(&self, cell: &T) -> DbResult<()> {
+        cell.put(&self.db)
+    }
+
+    fn put_batch<T: SimpleStorableCell>(
+        &self,
+        cell: &T,
+        write_batch: &mut WriteBatch,
+    ) -> DbResult<()> {
+        cell.put_batch(&self.db, write_batch)
+    }
+
     pub fn get_meta_first_block_in_db(&self) -> DbResult<u64> {
         let cf_meta = self.meta_column();
         let res = self
@@ -149,32 +145,7 @@ impl RocksDBIO {
     }
 
     pub fn get_meta_last_block_in_db(&self) -> DbResult<u64> {
-        let cf_meta = self.meta_column();
-        let res = self
-            .db
-            .get_cf(
-                &cf_meta,
-                borsh::to_vec(&DB_META_LAST_BLOCK_IN_DB_KEY).map_err(|err| {
-                    DbError::borsh_cast_message(
-                        err,
-                        Some("Failed to serialize DB_META_LAST_BLOCK_IN_DB_KEY".to_owned()),
-                    )
-                })?,
-            )
-            .map_err(|rerr| DbError::rocksdb_cast_message(rerr, None))?;
-
-        if let Some(data) = res {
-            Ok(borsh::from_slice::<u64>(&data).map_err(|err| {
-                DbError::borsh_cast_message(
-                    err,
-                    Some("Failed to deserialize last block".to_owned()),
-                )
-            })?)
-        } else {
-            Err(DbError::db_interaction_error(
-                "Last block not found".to_owned(),
-            ))
-        }
+        self.get::<LastBlockCell>().map(|cell| cell.0)
     }
 
     pub fn get_meta_is_first_block_set(&self) -> DbResult<bool> {
@@ -246,25 +217,7 @@ impl RocksDBIO {
     }
 
     pub fn put_meta_last_block_in_db(&self, block_id: u64) -> DbResult<()> {
-        let cf_meta = self.meta_column();
-        self.db
-            .put_cf(
-                &cf_meta,
-                borsh::to_vec(&DB_META_LAST_BLOCK_IN_DB_KEY).map_err(|err| {
-                    DbError::borsh_cast_message(
-                        err,
-                        Some("Failed to serialize DB_META_LAST_BLOCK_IN_DB_KEY".to_owned()),
-                    )
-                })?,
-                borsh::to_vec(&block_id).map_err(|err| {
-                    DbError::borsh_cast_message(
-                        err,
-                        Some("Failed to serialize last block id".to_owned()),
-                    )
-                })?,
-            )
-            .map_err(|rerr| DbError::rocksdb_cast_message(rerr, None))?;
-        Ok(())
+        self.put(&LastBlockCell(block_id))
     }
 
     fn put_meta_last_block_in_db_batch(
@@ -272,23 +225,7 @@ impl RocksDBIO {
         block_id: u64,
         batch: &mut WriteBatch,
     ) -> DbResult<()> {
-        let cf_meta = self.meta_column();
-        batch.put_cf(
-            &cf_meta,
-            borsh::to_vec(&DB_META_LAST_BLOCK_IN_DB_KEY).map_err(|err| {
-                DbError::borsh_cast_message(
-                    err,
-                    Some("Failed to serialize DB_META_LAST_BLOCK_IN_DB_KEY".to_owned()),
-                )
-            })?,
-            borsh::to_vec(&block_id).map_err(|err| {
-                DbError::borsh_cast_message(
-                    err,
-                    Some("Failed to serialize last block id".to_owned()),
-                )
-            })?,
-        );
-        Ok(())
+        self.put_batch(&LastBlockCell(block_id), batch)
     }
 
     pub fn put_meta_last_finalized_block_id(&self, block_id: Option<u64>) -> DbResult<()> {
