@@ -535,31 +535,31 @@ mod tests {
 
     #[test]
     fn validity_window_from_range() {
-        let w = ValidityWindow::try_from(5u64..10).unwrap();
+        let w = ValidityWindow::try_from(5_u64..10).unwrap();
         assert_eq!(w.from(), Some(5));
         assert_eq!(w.to(), Some(10));
     }
 
     #[test]
     fn validity_window_from_range_empty_is_invalid() {
-        assert!(ValidityWindow::try_from(5u64..5).is_err());
+        assert!(ValidityWindow::try_from(5_u64..5).is_err());
     }
 
     #[test]
     fn validity_window_from_range_inverted_is_invalid() {
-        assert!(ValidityWindow::try_from(10u64..5).is_err());
+        assert!(ValidityWindow::try_from(10_u64..5).is_err());
     }
 
     #[test]
     fn validity_window_from_range_from() {
-        let w: ValidityWindow = (5u64..).into();
+        let w: ValidityWindow = (5_u64..).into();
         assert_eq!(w.from(), Some(5));
         assert_eq!(w.to(), None);
     }
 
     #[test]
     fn validity_window_from_range_to() {
-        let w: ValidityWindow = (..10u64).into();
+        let w: ValidityWindow = (..10_u64).into();
         assert_eq!(w.from(), None);
         assert_eq!(w.to(), Some(10));
     }

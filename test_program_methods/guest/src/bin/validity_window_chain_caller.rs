@@ -7,9 +7,9 @@ use risc0_zkvm::serde::to_vec;
 /// A program that sets a validity window on its output and chains to another program with a
 /// potentially different validity window.
 ///
-/// Instruction: (from_id, until_id, chained_program_id, chained_from, chained_until)
-/// The initial output uses [from_id, until_id) and chains to `chained_program_id` with
-/// [chained_from, chained_until).
+/// Instruction: (`from_id`, `until_id`, `chained_program_id`, `chained_from`, `chained_until`)
+/// The initial output uses [`from_id`, `until_id`) and chains to `chained_program_id` with
+/// [`chained_from`, `chained_until`).
 type Instruction = (
     Option<BlockId>,
     Option<BlockId>,
