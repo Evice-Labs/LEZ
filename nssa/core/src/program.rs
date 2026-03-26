@@ -155,7 +155,7 @@ impl AccountPostState {
 
 pub type BlockId = u64;
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 #[cfg_attr(
     any(feature = "host", test),
     derive(Debug, PartialEq, Eq, BorshSerialize, BorshDeserialize)
