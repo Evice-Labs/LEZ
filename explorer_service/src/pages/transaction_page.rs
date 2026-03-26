@@ -183,12 +183,6 @@ pub fn TransactionPage() -> impl IntoView {
                                         signatures_and_public_keys: _,
                                         proof,
                                     } = witness_set;
-                                    let validity_window_formatted = match validity_window.0 {
-                                        (Some(start), Some(end)) => format!("Blocks {start} (included) – {end} (excluded)"),
-                                        (Some(start), None) => format!("Block {start} onwards"),
-                                        (None, Some(end)) => format!("Before block {end}"),
-                                        (None, None) => "Unbounded".to_owned(),
-                                    };
 
                                     let proof_len = proof.map_or(0, |p| p.0.len());
                                     view! {
@@ -221,7 +215,7 @@ pub fn TransactionPage() -> impl IntoView {
                                                 </div>
                                                 <div class="info-row">
                                                     <span class="info-label">"Validity Window:"</span>
-                                                    <span class="info-value">{validity_window_formatted}</span>
+                                                    <span class="info-value">{validity_window.to_string()}</span>
                                                 </div>
                                             </div>
 

@@ -304,6 +304,17 @@ pub struct Nullifier(
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 pub struct ValidityWindow(pub (Option<BlockId>, Option<BlockId>));
 
+impl Display for ValidityWindow {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.0 {
+            (Some(start), Some(end)) => write!(f, "[{start}, {end})"),
+            (Some(start), None) => write!(f, "[{start}, ∞)"),
+            (None, Some(end)) => write!(f, "(-∞, {end})"),
+            (None, None) => write!(f, "(-∞, ∞)"),
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 pub struct CommitmentSetDigest(
     #[serde(with = "base64::arr")]
