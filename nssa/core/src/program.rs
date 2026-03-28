@@ -5,7 +5,10 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use risc0_zkvm::{DeserializeOwned, guest::env, serde::Deserializer};
 use serde::{Deserialize, Serialize};
 
-use crate::account::{Account, AccountId, AccountWithMetadata};
+use crate::{
+    BlockId, Timestamp,
+    account::{Account, AccountId, AccountWithMetadata},
+};
 
 pub const DEFAULT_PROGRAM_ID: ProgramId = [0; 8];
 pub const MAX_NUMBER_CHAINED_CALLS: usize = 10;
@@ -171,8 +174,6 @@ impl AccountPostState {
     }
 }
 
-use crate::{BlockId, Timestamp};
-
 pub type BlockValidityWindow = ValidityWindow<BlockId>;
 pub type TimestampValidityWindow = ValidityWindow<Timestamp>;
 
@@ -216,13 +217,13 @@ impl<T: Copy + PartialOrd> ValidityWindow<T> {
 
     /// Inclusive lower bound. `None` means no lower bound.
     #[must_use]
-    pub fn start(&self) -> Option<T> {
+    pub const fn start(&self) -> Option<T> {
         self.from
     }
 
     /// Exclusive upper bound. `None` means no upper bound.
     #[must_use]
-    pub fn end(&self) -> Option<T> {
+    pub const fn end(&self) -> Option<T> {
         self.to
     }
 }

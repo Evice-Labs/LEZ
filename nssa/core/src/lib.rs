@@ -3,10 +3,6 @@
     reason = "We prefer to group methods by functionality rather than by type for encoding"
 )]
 
-pub type BlockId = u64;
-/// Unix timestamp in milliseconds.
-pub type Timestamp = u64;
-
 pub use circuit_io::{PrivacyPreservingCircuitInput, PrivacyPreservingCircuitOutput};
 pub use commitment::{
     Commitment, CommitmentSetDigest, DUMMY_COMMITMENT, DUMMY_COMMITMENT_HASH, MembershipProof,
@@ -25,3 +21,7 @@ pub mod program;
 
 #[cfg(feature = "host")]
 pub mod error;
+
+pub type BlockId = u64;
+/// Unix timestamp in milliseconds.
+pub type Timestamp = u64;

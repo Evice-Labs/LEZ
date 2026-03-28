@@ -9,7 +9,7 @@ use risc0_zkvm::serde::to_vec;
 ///
 /// Instruction: (`window`, `chained_program_id`, `chained_window`)
 /// The initial output uses `window` and chains to `chained_program_id` with `chained_window`.
-/// The chained program (validity_window) expects `(BlockValidityWindow, TimestampValidityWindow)`
+/// The chained program (`validity_window`) expects `(BlockValidityWindow, TimestampValidityWindow)`
 /// so an unbounded timestamp window is appended automatically.
 type Instruction = (BlockValidityWindow, ProgramId, BlockValidityWindow);
 

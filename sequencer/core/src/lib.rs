@@ -524,7 +524,7 @@ mod tests {
         let tx = tx.transaction_stateless_check().unwrap();
 
         // Signature is not from sender. Execution fails
-        let result = sequencer.execute_check_transaction_on_state(tx);
+        let result = sequencer.execute_check_transaction_on_state(tx, 0, 0);
 
         assert!(matches!(
             result,
@@ -550,7 +550,7 @@ mod tests {
         // Passed pre-check
         assert!(result.is_ok());
 
-        let result = sequencer.execute_check_transaction_on_state(result.unwrap());
+        let result = sequencer.execute_check_transaction_on_state(result.unwrap(), 0, 0);
         let is_failed_at_balance_mismatch = matches!(
             result.err().unwrap(),
             nssa::error::NssaError::ProgramExecutionFailed(_)
@@ -572,7 +572,9 @@ mod tests {
             acc1, 0, acc2, 100, &sign_key1,
         );
 
-        sequencer.execute_check_transaction_on_state(tx).unwrap();
+        sequencer
+            .execute_check_transaction_on_state(tx, 0, 0)
+            .unwrap();
 
         let bal_from = sequencer.state.get_account_by_id(acc1).balance;
         let bal_to = sequencer.state.get_account_by_id(acc2).balance;
