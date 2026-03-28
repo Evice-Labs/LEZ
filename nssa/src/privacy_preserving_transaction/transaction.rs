@@ -95,7 +95,9 @@ impl PrivacyPreservingTransaction {
         }
 
         // Verify validity window
-        if !message.validity_window.is_valid_for(block_id, timestamp_ms) {
+        if !message.block_validity_window.is_valid_for(block_id)
+            || !message.timestamp_validity_window.is_valid_for(timestamp_ms)
+        {
             return Err(NssaError::OutOfValidityWindow);
         }
 
@@ -120,7 +122,8 @@ impl PrivacyPreservingTransaction {
             &message.encrypted_private_post_states,
             &message.new_commitments,
             &message.new_nullifiers,
-            &message.validity_window,
+            &message.block_validity_window,
+            &message.timestamp_validity_window,
         )?;
 
         // 5. Commitment freshness
@@ -182,7 +185,8 @@ fn check_privacy_preserving_circuit_proof_is_valid(
     encrypted_private_post_states: &[EncryptedAccountData],
     new_commitments: &[Commitment],
     new_nullifiers: &[(Nullifier, CommitmentSetDigest)],
-    validity_window: &ValidityWindow,
+    block_validity_window: &ValidityWindow<BlockId>,
+    timestamp_validity_window: &ValidityWindow<Timestamp>,
 ) -> Result<(), NssaError> {
     let output = PrivacyPreservingCircuitOutput {
         public_pre_states: public_pre_states.to_vec(),
@@ -194,7 +198,8 @@ fn check_privacy_preserving_circuit_proof_is_valid(
             .collect(),
         new_commitments: new_commitments.to_vec(),
         new_nullifiers: new_nullifiers.to_vec(),
-        validity_window: validity_window.to_owned(),
+        block_validity_window: block_validity_window.to_owned(),
+        timestamp_validity_window: timestamp_validity_window.to_owned(),
     };
     proof
         .is_valid_for(&output)

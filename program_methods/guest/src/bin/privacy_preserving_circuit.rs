@@ -10,8 +10,9 @@ use nssa_core::{
     account::{Account, AccountId, AccountWithMetadata, Nonce},
     compute_digest_for_path,
     program::{
-        AccountPostState, ChainedCall, Claim, DEFAULT_PROGRAM_ID, MAX_NUMBER_CHAINED_CALLS,
-        ProgramId, ProgramOutput, ValidityWindow, validate_execution,
+        AccountPostState, BlockId, ChainedCall, Claim, DEFAULT_PROGRAM_ID,
+        MAX_NUMBER_CHAINED_CALLS, ProgramId, ProgramOutput, Timestamp, ValidityWindow,
+        validate_execution,
     },
 };
 use risc0_zkvm::{guest::env, serde::to_vec};
@@ -20,7 +21,8 @@ use risc0_zkvm::{guest::env, serde::to_vec};
 struct ExecutionState {
     pre_states: Vec<AccountWithMetadata>,
     post_states: HashMap<AccountId, Account>,
-    validity_window: ValidityWindow,
+    block_validity_window: ValidityWindow<BlockId>,
+    timestamp_validity_window: ValidityWindow<Timestamp>,
 }
 
 impl ExecutionState {
@@ -30,33 +32,40 @@ impl ExecutionState {
         program_id: ProgramId,
         program_outputs: Vec<ProgramOutput>,
     ) -> Self {
-        let valid_from_id = program_outputs
+        let block_valid_from = program_outputs
             .iter()
-            .filter_map(|output| output.validity_window.start())
+            .filter_map(|output| output.block_validity_window.start())
             .max();
-        let valid_until_id = program_outputs
+        let block_valid_until = program_outputs
             .iter()
-            .filter_map(|output| output.validity_window.end())
+            .filter_map(|output| output.block_validity_window.end())
             .min();
-        let valid_from_ts = program_outputs
+        let ts_valid_from = program_outputs
             .iter()
-            .filter_map(|output| output.validity_window.from_timestamp())
+            .filter_map(|output| output.timestamp_validity_window.start())
             .max();
-        let valid_until_ts = program_outputs
+        let ts_valid_until = program_outputs
             .iter()
-            .filter_map(|output| output.validity_window.to_timestamp())
+            .filter_map(|output| output.timestamp_validity_window.end())
             .min();
 
-        let validity_window = (valid_from_id, valid_until_id, valid_from_ts, valid_until_ts)
+        let block_validity_window: ValidityWindow<BlockId> = (block_valid_from, block_valid_until)
             .try_into()
             .expect(
-                "There should be non empty intersection in the program output validity windows",
+                "There should be non empty intersection in the program output block validity windows",
             );
+        let timestamp_validity_window: ValidityWindow<Timestamp> =
+            (ts_valid_from, ts_valid_until)
+                .try_into()
+                .expect(
+                    "There should be non empty intersection in the program output timestamp validity windows",
+                );
 
         let mut execution_state = Self {
             pre_states: Vec::new(),
             post_states: HashMap::new(),
-            validity_window,
+            block_validity_window,
+            timestamp_validity_window,
         };
 
         let Some(first_output) = program_outputs.first() else {
@@ -287,7 +296,8 @@ fn compute_circuit_output(
         ciphertexts: Vec::new(),
         new_commitments: Vec::new(),
         new_nullifiers: Vec::new(),
-        validity_window: execution_state.validity_window,
+        block_validity_window: execution_state.block_validity_window,
+        timestamp_validity_window: execution_state.timestamp_validity_window,
     };
 
     let states_iter = execution_state.into_states_iter();

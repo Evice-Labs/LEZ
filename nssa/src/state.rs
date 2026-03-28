@@ -3227,7 +3227,7 @@ pub mod tests {
         validity_window: (Option<BlockId>, Option<BlockId>),
         block_id: BlockId,
     ) {
-        let validity_window: ValidityWindow = validity_window.try_into().unwrap();
+        let validity_window: ValidityWindow<BlockId> = validity_window.try_into().unwrap();
         let validity_window_program = Program::validity_window();
         let account_keys = test_public_account_keys_1();
         let pre = AccountWithMetadata::new(Account::default(), false, account_keys.account_id());
@@ -3279,7 +3279,7 @@ pub mod tests {
         validity_window: (Option<BlockId>, Option<BlockId>),
         block_id: BlockId,
     ) {
-        let validity_window: ValidityWindow = validity_window.try_into().unwrap();
+        let validity_window: ValidityWindow<BlockId> = validity_window.try_into().unwrap();
         let validity_window_program = Program::validity_window();
         let account_keys = test_private_account_keys_1();
         let pre = AccountWithMetadata::new(Account::default(), false, &account_keys.npk());
