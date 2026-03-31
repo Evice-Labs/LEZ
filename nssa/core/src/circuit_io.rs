@@ -103,7 +103,7 @@ mod tests {
                 ),
                 [0xab; 32],
             )],
-            block_validity_window: (1..).try_into().unwrap(),
+            block_validity_window: (1..).try_into(),
             timestamp_validity_window: TimestampValidityWindow::new_unbounded(),
         };
         let bytes = output.to_bytes();
