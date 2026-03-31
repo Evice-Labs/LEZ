@@ -681,6 +681,78 @@ pub mod tests {
         assert_eq!(state.get_account_by_id(account_id3).nonce, Nonce(0));
     }
 
+    fn clock_transaction(timestamp: nssa_core::Timestamp) -> PublicTransaction {
+        let message = public_transaction::Message::try_new(
+            Program::clock().id(),
+            vec![CLOCK_PROGRAM_ACCOUNT_ID],
+            vec![],
+            timestamp,
+        )
+        .unwrap();
+        PublicTransaction::new(
+            message,
+            public_transaction::WitnessSet::from_raw_parts(vec![]),
+        )
+    }
+
+    fn clock_account_data(state: &V03State) -> (u64, nssa_core::Timestamp) {
+        let data = state
+            .get_account_by_id(CLOCK_PROGRAM_ACCOUNT_ID)
+            .data
+            .into_inner();
+        let block_id = u64::from_le_bytes(data[..8].try_into().unwrap());
+        let timestamp = u64::from_le_bytes(data[8..].try_into().unwrap());
+        (block_id, timestamp)
+    }
+
+    #[test]
+    fn clock_genesis_state_has_zero_block_id_and_genesis_timestamp() {
+        let genesis_timestamp = 1_000_000u64;
+        let state = V03State::new_with_genesis_accounts(&[], &[], genesis_timestamp);
+
+        let (block_id, timestamp) = clock_account_data(&state);
+
+        assert_eq!(block_id, 0);
+        assert_eq!(timestamp, genesis_timestamp);
+    }
+
+    #[test]
+    fn clock_invocation_increments_block_id() {
+        let mut state = V03State::new_with_genesis_accounts(&[], &[], 0);
+
+        let tx = clock_transaction(1234);
+        state.transition_from_public_transaction(&tx).unwrap();
+
+        let (block_id, _) = clock_account_data(&state);
+        assert_eq!(block_id, 1);
+    }
+
+    #[test]
+    fn clock_invocation_stores_timestamp_from_instruction() {
+        let mut state = V03State::new_with_genesis_accounts(&[], &[], 0);
+        let block_timestamp = 1_700_000_000_000u64;
+
+        let tx = clock_transaction(block_timestamp);
+        state.transition_from_public_transaction(&tx).unwrap();
+
+        let (_, timestamp) = clock_account_data(&state);
+        assert_eq!(timestamp, block_timestamp);
+    }
+
+    #[test]
+    fn clock_invocation_sequence_correctly_increments_block_id() {
+        let mut state = V03State::new_with_genesis_accounts(&[], &[], 0);
+
+        for expected_block_id in 1u64..=5 {
+            let tx = clock_transaction(expected_block_id * 1000);
+            state.transition_from_public_transaction(&tx).unwrap();
+
+            let (block_id, timestamp) = clock_account_data(&state);
+            assert_eq!(block_id, expected_block_id);
+            assert_eq!(timestamp, expected_block_id * 1000);
+        }
+    }
+
     #[test]
     fn program_should_fail_if_modifies_nonces() {
         let initial_data = [(AccountId::new([1; 32]), 100)];
