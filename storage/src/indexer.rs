@@ -990,7 +990,7 @@ mod tests {
     }
 
     fn initial_state() -> V03State {
-        nssa::V03State::new_with_genesis_accounts(&[(acc1(), 10000), (acc2(), 20000)], &[])
+        nssa::V03State::new_with_genesis_accounts(&[(acc1(), 10000), (acc2(), 20000)], &[], 0)
     }
 
     fn transfer(amount: u128, nonce: u128, direction: bool) -> NSSATransaction {

@@ -8,7 +8,7 @@ use crate::{HashType, transaction::NSSATransaction};
 pub type MantleMsgId = [u8; 32];
 pub type BlockHash = HashType;
 pub type BlockId = u64;
-pub type TimeStamp = u64;
+pub use nssa_core::Timestamp;
 
 #[derive(Debug, Clone, BorshSerialize, BorshDeserialize)]
 pub struct BlockMeta {
@@ -36,7 +36,7 @@ pub struct BlockHeader {
     pub block_id: BlockId,
     pub prev_block_hash: BlockHash,
     pub hash: BlockHash,
-    pub timestamp: TimeStamp,
+    pub timestamp: Timestamp,
     pub signature: nssa::Signature,
 }
 
@@ -76,7 +76,7 @@ impl<'de> Deserialize<'de> for Block {
 pub struct HashableBlockData {
     pub block_id: BlockId,
     pub prev_block_hash: BlockHash,
-    pub timestamp: TimeStamp,
+    pub timestamp: Timestamp,
     pub transactions: Vec<NSSATransaction>,
 }
 

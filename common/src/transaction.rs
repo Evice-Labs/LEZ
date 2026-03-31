@@ -43,15 +43,15 @@ impl NSSATransaction {
         }
     }
 
-    /// Returns the canonical Block Context Program invocation transaction.
-    /// Every valid block must end with exactly one occurrence of this transaction.
+    /// Returns the canonical Block Context Program invocation transaction for the given block
+    /// timestamp. Every valid block must end with exactly one occurrence of this transaction.
     #[must_use]
-    pub fn clock_invocation() -> Self {
+    pub fn clock_invocation(timestamp: nssa_core::Timestamp) -> Self {
         let message = nssa::public_transaction::Message::try_new(
             nssa::program::Program::clock().id(),
             vec![nssa::CLOCK_PROGRAM_ACCOUNT_ID],
             vec![],
-            (),
+            timestamp,
         )
         .expect("Clock invocation message should always be constructable");
         Self::Public(nssa::PublicTransaction::new(

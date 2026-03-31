@@ -121,7 +121,11 @@ impl<BC: BlockSettlementClientTrait, IC: IndexerClientTrait> SequencerCore<BC, I
                 .map(|acc_data| (acc_data.account_id, acc_data.balance))
                 .collect();
 
-            nssa::V03State::new_with_genesis_accounts(&init_accs, &initial_commitments)
+            nssa::V03State::new_with_genesis_accounts(
+                &init_accs,
+                &initial_commitments,
+                genesis_block.header.timestamp,
+            )
         };
 
         #[cfg(feature = "testnet")]
@@ -268,7 +272,7 @@ impl<BC: BlockSettlementClientTrait, IC: IndexerClientTrait> SequencerCore<BC, I
         }
 
         // Append the Block Context Program invocation as the mandatory last transaction.
-        match self.execute_check_transaction_on_state(NSSATransaction::clock_invocation()) {
+        match self.execute_check_transaction_on_state(NSSATransaction::clock_invocation(curr_time)) {
             Ok(clock_nssa_tx) => {
                 valid_transactions.push(clock_nssa_tx);
             }
@@ -724,7 +728,7 @@ mod tests {
             .unwrap();
 
         // Only one user tx should be included; the clock tx is always appended last.
-        assert_eq!(block.body.transactions, vec![tx.clone(), NSSATransaction::clock_invocation()]);
+        assert_eq!(block.body.transactions, vec![tx.clone(), NSSATransaction::clock_invocation(block.header.timestamp)]);
     }
 
     #[tokio::test]
@@ -750,7 +754,7 @@ mod tests {
             .get_block_at_id(sequencer.chain_height)
             .unwrap()
             .unwrap();
-        assert_eq!(block.body.transactions, vec![tx.clone(), NSSATransaction::clock_invocation()]);
+        assert_eq!(block.body.transactions, vec![tx.clone(), NSSATransaction::clock_invocation(block.header.timestamp)]);
 
         // Add same transaction should fail
         mempool_handle.push(tx.clone()).await.unwrap();
@@ -763,7 +767,7 @@ mod tests {
             .unwrap()
             .unwrap();
         // The replay is rejected, so only the clock tx is in the block.
-        assert_eq!(block.body.transactions, vec![NSSATransaction::clock_invocation()]);
+        assert_eq!(block.body.transactions, vec![NSSATransaction::clock_invocation(block.header.timestamp)]);
     }
 
     #[tokio::test]
@@ -798,7 +802,7 @@ mod tests {
                 .get_block_at_id(sequencer.chain_height)
                 .unwrap()
                 .unwrap();
-            assert_eq!(block.body.transactions, vec![tx.clone(), NSSATransaction::clock_invocation()]);
+            assert_eq!(block.body.transactions, vec![tx.clone(), NSSATransaction::clock_invocation(block.header.timestamp)]);
         }
 
         // Instantiating a new sequencer from the same config. This should load the existing block
@@ -928,7 +932,7 @@ mod tests {
         );
         assert_eq!(
             new_block.body.transactions,
-            vec![tx, NSSATransaction::clock_invocation()],
+            vec![tx, NSSATransaction::clock_invocation(new_block.header.timestamp)],
             "New block should contain the submitted transaction and the clock invocation"
         );
     }
@@ -954,7 +958,7 @@ mod tests {
             ))
         };
         mempool_handle
-            .push(NSSATransaction::clock_invocation())
+            .push(NSSATransaction::clock_invocation(0))
             .await
             .unwrap();
         mempool_handle.push(crafted_clock_tx).await.unwrap();
@@ -969,7 +973,7 @@ mod tests {
             .unwrap();
 
         // Both transactions were dropped. Only the system-appended clock tx remains.
-        assert_eq!(block.body.transactions, vec![NSSATransaction::clock_invocation()]);
+        assert_eq!(block.body.transactions, vec![NSSATransaction::clock_invocation(block.header.timestamp)]);
     }
 
     #[tokio::test]

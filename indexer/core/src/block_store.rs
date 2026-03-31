@@ -119,7 +119,7 @@ impl IndexerStore {
 
     pub async fn put_block(&self, mut block: Block, l1_header: HeaderId) -> Result<()> {
         {
-            let canonical_clock_tx = NSSATransaction::clock_invocation();
+            let expected_clock_tx = NSSATransaction::clock_invocation(block.header.timestamp);
 
             // Validate block structure: the last transaction must be the sole clock invocation.
             let last_tx = block
@@ -128,7 +128,7 @@ impl IndexerStore {
                 .last()
                 .ok_or_else(|| anyhow::anyhow!("Block must contain at least one transaction"))?;
             anyhow::ensure!(
-                last_tx == &canonical_clock_tx,
+                last_tx == &expected_clock_tx,
                 "Last transaction in block must be the canonical clock invocation"
             );
 
@@ -136,7 +136,7 @@ impl IndexerStore {
                 .body
                 .transactions
                 .iter()
-                .filter(|tx| *tx == &canonical_clock_tx)
+                .filter(|tx| *tx == &expected_clock_tx)
                 .count();
             anyhow::ensure!(
                 clock_count == 1,
@@ -196,7 +196,7 @@ mod tests {
         let storage = IndexerStore::open_db_with_genesis(
             home.as_ref(),
             &genesis_block(),
-            &nssa::V03State::new_with_genesis_accounts(&[(acc1(), 10000), (acc2(), 20000)], &[]),
+            &nssa::V03State::new_with_genesis_accounts(&[(acc1(), 10000), (acc2(), 20000)], &[], 0),
         )
         .unwrap();
 
@@ -214,7 +214,7 @@ mod tests {
         let storage = IndexerStore::open_db_with_genesis(
             home.as_ref(),
             &genesis_block(),
-            &nssa::V03State::new_with_genesis_accounts(&[(acc1(), 10000), (acc2(), 20000)], &[]),
+            &nssa::V03State::new_with_genesis_accounts(&[(acc1(), 10000), (acc2(), 20000)], &[], 0),
         )
         .unwrap();
 
@@ -232,10 +232,12 @@ mod tests {
                 10,
                 &sign_key,
             );
-            let clock_tx = NSSATransaction::clock_invocation();
+            let block_id = u64::try_from(i).unwrap();
+            let block_timestamp = block_id.saturating_mul(100);
+            let clock_tx = NSSATransaction::clock_invocation(block_timestamp);
 
             let next_block = common::test_utils::produce_dummy_block(
-                u64::try_from(i).unwrap(),
+                block_id,
                 Some(prev_hash),
                 vec![tx, clock_tx],
             );
