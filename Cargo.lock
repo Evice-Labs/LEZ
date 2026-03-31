@@ -1515,6 +1515,7 @@ dependencies = [
  "log",
  "logos-blockchain-common-http-client",
  "nssa",
+ "nssa_core",
  "serde",
  "serde_with",
  "sha2",
