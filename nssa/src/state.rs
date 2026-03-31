@@ -2293,7 +2293,7 @@ pub mod tests {
         let witness_set = public_transaction::WitnessSet::for_message(&message, &[]);
         let tx = PublicTransaction::new(message, witness_set);
 
-        let result = state.transition_from_public_transaction(&tx, 1);
+        let result = state.transition_from_public_transaction(&tx, 1, 0);
 
         assert!(matches!(result, Err(NssaError::ProgramExecutionFailed(_))));
         assert_eq!(state.get_account_by_id(account_id), Account::default());
@@ -2318,7 +2318,7 @@ pub mod tests {
         let witness_set = public_transaction::WitnessSet::for_message(&message, &[&account_key]);
         let tx = PublicTransaction::new(message, witness_set);
 
-        state.transition_from_public_transaction(&tx, 1).unwrap();
+        state.transition_from_public_transaction(&tx, 1, 0).unwrap();
 
         assert_eq!(
             state.get_account_by_id(account_id),
@@ -2577,7 +2577,7 @@ pub mod tests {
         let tx = PrivacyPreservingTransaction::new(message, witness_set);
 
         state
-            .transition_from_privacy_preserving_transaction(&tx, 1)
+            .transition_from_privacy_preserving_transaction(&tx, 1, 0)
             .unwrap();
 
         let nullifier = Nullifier::for_account_update(&sender_commitment, &sender_keys.nsk);
@@ -2973,7 +2973,7 @@ pub mod tests {
         let tx = PrivacyPreservingTransaction::new(message, witness_set);
 
         state
-            .transition_from_privacy_preserving_transaction(&tx, 1)
+            .transition_from_privacy_preserving_transaction(&tx, 1, 0)
             .unwrap();
 
         let nullifier = Nullifier::for_account_initialization(&private_keys.npk());
