@@ -2,9 +2,10 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use nssa_core::{
-    Commitment, CommitmentSetDigest, DUMMY_COMMITMENT, MembershipProof, Nullifier,
+    BlockId, Commitment, CommitmentSetDigest, DUMMY_COMMITMENT, MembershipProof, Nullifier,
+    Timestamp,
     account::{Account, AccountId, Nonce},
-    program::{BlockId, ProgramId},
+    program::ProgramId,
 };
 
 use crate::{
@@ -159,8 +160,9 @@ impl V03State {
         &mut self,
         tx: &PublicTransaction,
         block_id: BlockId,
+        timestamp: Timestamp,
     ) -> Result<(), NssaError> {
-        let state_diff = tx.validate_and_produce_public_state_diff(self, block_id)?;
+        let state_diff = tx.validate_and_produce_public_state_diff(self, block_id, timestamp)?;
 
         #[expect(
             clippy::iter_over_hash_type,
@@ -184,9 +186,11 @@ impl V03State {
         &mut self,
         tx: &PrivacyPreservingTransaction,
         block_id: BlockId,
+        timestamp: Timestamp,
     ) -> Result<(), NssaError> {
         // 1. Verify the transaction satisfies acceptance criteria
-        let public_state_diff = tx.validate_and_produce_public_state_diff(self, block_id)?;
+        let public_state_diff =
+            tx.validate_and_produce_public_state_diff(self, block_id, timestamp)?;
 
         let message = tx.message();
 
@@ -338,10 +342,11 @@ pub mod tests {
     use std::collections::HashMap;
 
     use nssa_core::{
-        Commitment, Nullifier, NullifierPublicKey, NullifierSecretKey, SharedSecretKey,
+        BlockId, Commitment, Nullifier, NullifierPublicKey, NullifierSecretKey, SharedSecretKey,
+        Timestamp,
         account::{Account, AccountId, AccountWithMetadata, Nonce, data::Data},
         encryption::{EphemeralPublicKey, Scalar, ViewingPublicKey},
-        program::{BlockId, PdaSeed, ProgramId, ValidityWindow},
+        program::{BlockValidityWindow, PdaSeed, ProgramId, TimestampValidityWindow},
     };
 
     use crate::{
@@ -576,7 +581,7 @@ pub mod tests {
         let balance_to_move = 5;
 
         let tx = transfer_transaction(from, &key, 0, to, &to_key, 0, balance_to_move);
-        state.transition_from_public_transaction(&tx, 1).unwrap();
+        state.transition_from_public_transaction(&tx, 1, 0).unwrap();
 
         assert_eq!(state.get_account_by_id(from).balance, 95);
         assert_eq!(state.get_account_by_id(to).balance, 5);
@@ -598,7 +603,7 @@ pub mod tests {
         assert!(state.get_account_by_id(from).balance < balance_to_move);
 
         let tx = transfer_transaction(from, &from_key, 0, to, &to_key, 0, balance_to_move);
-        let result = state.transition_from_public_transaction(&tx, 1);
+        let result = state.transition_from_public_transaction(&tx, 1, 0);
 
         assert!(matches!(result, Err(NssaError::ProgramExecutionFailed(_))));
         assert_eq!(state.get_account_by_id(from).balance, 100);
@@ -623,7 +628,7 @@ pub mod tests {
         let balance_to_move = 8;
 
         let tx = transfer_transaction(from, &from_key, 0, to, &to_key, 0, balance_to_move);
-        state.transition_from_public_transaction(&tx, 1).unwrap();
+        state.transition_from_public_transaction(&tx, 1, 0).unwrap();
 
         assert_eq!(state.get_account_by_id(from).balance, 192);
         assert_eq!(state.get_account_by_id(to).balance, 108);
@@ -652,7 +657,7 @@ pub mod tests {
             0,
             balance_to_move,
         );
-        state.transition_from_public_transaction(&tx, 1).unwrap();
+        state.transition_from_public_transaction(&tx, 1, 0).unwrap();
         let balance_to_move = 3;
         let tx = transfer_transaction(
             account_id2,
@@ -663,7 +668,7 @@ pub mod tests {
             0,
             balance_to_move,
         );
-        state.transition_from_public_transaction(&tx, 1).unwrap();
+        state.transition_from_public_transaction(&tx, 1, 0).unwrap();
 
         assert_eq!(state.get_account_by_id(account_id1).balance, 95);
         assert_eq!(state.get_account_by_id(account_id2).balance, 2);
@@ -685,7 +690,7 @@ pub mod tests {
         let witness_set = public_transaction::WitnessSet::for_message(&message, &[]);
         let tx = PublicTransaction::new(message, witness_set);
 
-        let result = state.transition_from_public_transaction(&tx, 1);
+        let result = state.transition_from_public_transaction(&tx, 1, 0);
 
         assert!(matches!(result, Err(NssaError::InvalidProgramBehavior)));
     }
@@ -702,7 +707,7 @@ pub mod tests {
         let witness_set = public_transaction::WitnessSet::for_message(&message, &[]);
         let tx = PublicTransaction::new(message, witness_set);
 
-        let result = state.transition_from_public_transaction(&tx, 1);
+        let result = state.transition_from_public_transaction(&tx, 1, 0);
 
         assert!(matches!(result, Err(NssaError::InvalidProgramBehavior)));
     }
@@ -719,7 +724,7 @@ pub mod tests {
         let witness_set = public_transaction::WitnessSet::for_message(&message, &[]);
         let tx = PublicTransaction::new(message, witness_set);
 
-        let result = state.transition_from_public_transaction(&tx, 1);
+        let result = state.transition_from_public_transaction(&tx, 1, 0);
 
         assert!(matches!(result, Err(NssaError::InvalidProgramBehavior)));
     }
@@ -743,7 +748,7 @@ pub mod tests {
         let witness_set = public_transaction::WitnessSet::for_message(&message, &[]);
         let tx = PublicTransaction::new(message, witness_set);
 
-        let result = state.transition_from_public_transaction(&tx, 1);
+        let result = state.transition_from_public_transaction(&tx, 1, 0);
 
         assert!(matches!(result, Err(NssaError::InvalidProgramBehavior)));
     }
@@ -767,7 +772,7 @@ pub mod tests {
         let witness_set = public_transaction::WitnessSet::for_message(&message, &[]);
         let tx = PublicTransaction::new(message, witness_set);
 
-        let result = state.transition_from_public_transaction(&tx, 1);
+        let result = state.transition_from_public_transaction(&tx, 1, 0);
 
         assert!(matches!(result, Err(NssaError::InvalidProgramBehavior)));
     }
@@ -791,7 +796,7 @@ pub mod tests {
         let witness_set = public_transaction::WitnessSet::for_message(&message, &[]);
         let tx = PublicTransaction::new(message, witness_set);
 
-        let result = state.transition_from_public_transaction(&tx, 1);
+        let result = state.transition_from_public_transaction(&tx, 1, 0);
 
         assert!(matches!(result, Err(NssaError::InvalidProgramBehavior)));
     }
@@ -815,7 +820,7 @@ pub mod tests {
         let witness_set = public_transaction::WitnessSet::for_message(&message, &[]);
         let tx = PublicTransaction::new(message, witness_set);
 
-        let result = state.transition_from_public_transaction(&tx, 1);
+        let result = state.transition_from_public_transaction(&tx, 1, 0);
 
         assert!(matches!(result, Err(NssaError::InvalidProgramBehavior)));
     }
@@ -843,7 +848,7 @@ pub mod tests {
         let witness_set = public_transaction::WitnessSet::for_message(&message, &[]);
         let tx = PublicTransaction::new(message, witness_set);
 
-        let result = state.transition_from_public_transaction(&tx, 1);
+        let result = state.transition_from_public_transaction(&tx, 1, 0);
 
         assert!(matches!(result, Err(NssaError::InvalidProgramBehavior)));
     }
@@ -868,7 +873,7 @@ pub mod tests {
         let witness_set = public_transaction::WitnessSet::for_message(&message, &[]);
         let tx = PublicTransaction::new(message, witness_set);
 
-        let result = state.transition_from_public_transaction(&tx, 1);
+        let result = state.transition_from_public_transaction(&tx, 1, 0);
 
         assert!(matches!(result, Err(NssaError::InvalidProgramBehavior)));
     }
@@ -886,7 +891,7 @@ pub mod tests {
         let witness_set = public_transaction::WitnessSet::for_message(&message, &[]);
         let tx = PublicTransaction::new(message, witness_set);
 
-        let result = state.transition_from_public_transaction(&tx, 1);
+        let result = state.transition_from_public_transaction(&tx, 1, 0);
 
         assert!(matches!(result, Err(NssaError::InvalidProgramBehavior)));
     }
@@ -915,7 +920,7 @@ pub mod tests {
         .unwrap();
         let witness_set = public_transaction::WitnessSet::for_message(&message, &[]);
         let tx = PublicTransaction::new(message, witness_set);
-        let result = state.transition_from_public_transaction(&tx, 1);
+        let result = state.transition_from_public_transaction(&tx, 1, 0);
 
         assert!(matches!(result, Err(NssaError::InvalidProgramBehavior)));
     }
@@ -1108,7 +1113,7 @@ pub mod tests {
         assert!(!state.private_state.0.contains(&expected_new_commitment));
 
         state
-            .transition_from_privacy_preserving_transaction(&tx, 1)
+            .transition_from_privacy_preserving_transaction(&tx, 1, 0)
             .unwrap();
 
         let sender_post = state.get_account_by_id(sender_keys.account_id());
@@ -1178,7 +1183,7 @@ pub mod tests {
         assert!(!state.private_state.1.contains(&expected_new_nullifier));
 
         state
-            .transition_from_privacy_preserving_transaction(&tx, 1)
+            .transition_from_privacy_preserving_transaction(&tx, 1, 0)
             .unwrap();
 
         assert_eq!(state.public_state, previous_public_state);
@@ -1242,7 +1247,7 @@ pub mod tests {
         assert!(!state.private_state.1.contains(&expected_new_nullifier));
 
         state
-            .transition_from_privacy_preserving_transaction(&tx, 1)
+            .transition_from_privacy_preserving_transaction(&tx, 1, 0)
             .unwrap();
 
         let recipient_post = state.get_account_by_id(recipient_keys.account_id());
@@ -2170,7 +2175,7 @@ pub mod tests {
         );
 
         state
-            .transition_from_privacy_preserving_transaction(&tx, 1)
+            .transition_from_privacy_preserving_transaction(&tx, 1, 0)
             .unwrap();
 
         let sender_private_account = Account {
@@ -2188,7 +2193,7 @@ pub mod tests {
             &state,
         );
 
-        let result = state.transition_from_privacy_preserving_transaction(&tx, 1);
+        let result = state.transition_from_privacy_preserving_transaction(&tx, 1, 0);
 
         assert!(matches!(result, Err(NssaError::InvalidInput(_))));
         let NssaError::InvalidInput(error_message) = result.err().unwrap() else {
@@ -2266,7 +2271,7 @@ pub mod tests {
             public_transaction::WitnessSet::for_message(&message, &[&from_key, &to_key]);
         let tx = PublicTransaction::new(message, witness_set);
 
-        state.transition_from_public_transaction(&tx, 1).unwrap();
+        state.transition_from_public_transaction(&tx, 1, 0).unwrap();
 
         let recipient_post = state.get_account_by_id(to);
 
@@ -2288,7 +2293,7 @@ pub mod tests {
         let witness_set = public_transaction::WitnessSet::for_message(&message, &[]);
         let tx = PublicTransaction::new(message, witness_set);
 
-        let result = state.transition_from_public_transaction(&tx, 1);
+        let result = state.transition_from_public_transaction(&tx, 1, 0);
 
         assert!(matches!(result, Err(NssaError::ProgramExecutionFailed(_))));
         assert_eq!(state.get_account_by_id(account_id), Account::default());
@@ -2313,7 +2318,7 @@ pub mod tests {
         let witness_set = public_transaction::WitnessSet::for_message(&message, &[&account_key]);
         let tx = PublicTransaction::new(message, witness_set);
 
-        state.transition_from_public_transaction(&tx, 1).unwrap();
+        state.transition_from_public_transaction(&tx, 1, 0).unwrap();
 
         assert_eq!(
             state.get_account_by_id(account_id),
@@ -2361,7 +2366,7 @@ pub mod tests {
         let witness_set = public_transaction::WitnessSet::for_message(&message, &[&from_key]);
         let tx = PublicTransaction::new(message, witness_set);
 
-        state.transition_from_public_transaction(&tx, 1).unwrap();
+        state.transition_from_public_transaction(&tx, 1, 0).unwrap();
 
         let from_post = state.get_account_by_id(from);
         let to_post = state.get_account_by_id(to);
@@ -2401,7 +2406,7 @@ pub mod tests {
         let witness_set = public_transaction::WitnessSet::for_message(&message, &[&from_key]);
         let tx = PublicTransaction::new(message, witness_set);
 
-        let result = state.transition_from_public_transaction(&tx, 1);
+        let result = state.transition_from_public_transaction(&tx, 1, 0);
         assert!(matches!(
             result,
             Err(NssaError::MaxChainedCallsDepthExceeded)
@@ -2442,7 +2447,7 @@ pub mod tests {
         let witness_set = public_transaction::WitnessSet::for_message(&message, &[]);
         let tx = PublicTransaction::new(message, witness_set);
 
-        state.transition_from_public_transaction(&tx, 1).unwrap();
+        state.transition_from_public_transaction(&tx, 1, 0).unwrap();
 
         let from_post = state.get_account_by_id(from);
         let to_post = state.get_account_by_id(to);
@@ -2499,7 +2504,7 @@ pub mod tests {
             public_transaction::WitnessSet::for_message(&message, &[&from_key, &to_key]);
         let tx = PublicTransaction::new(message, witness_set);
 
-        state.transition_from_public_transaction(&tx, 1).unwrap();
+        state.transition_from_public_transaction(&tx, 1, 0).unwrap();
 
         let from_post = state.get_account_by_id(from);
         let to_post = state.get_account_by_id(to);
@@ -2572,7 +2577,7 @@ pub mod tests {
         let tx = PrivacyPreservingTransaction::new(message, witness_set);
 
         state
-            .transition_from_privacy_preserving_transaction(&tx, 1)
+            .transition_from_privacy_preserving_transaction(&tx, 1, 0)
             .unwrap();
 
         let nullifier = Nullifier::for_account_update(&sender_commitment, &sender_keys.nsk);
@@ -2690,7 +2695,7 @@ pub mod tests {
         let transaction = PrivacyPreservingTransaction::new(message, witness_set);
 
         state
-            .transition_from_privacy_preserving_transaction(&transaction, 1)
+            .transition_from_privacy_preserving_transaction(&transaction, 1, 0)
             .unwrap();
 
         // Assert
@@ -2703,6 +2708,96 @@ pub mod tests {
             state
                 .get_proof_for_commitment(&to_expected_commitment)
                 .is_some()
+        );
+    }
+
+    #[test]
+    fn pda_mechanism_with_pinata_token_program() {
+        let pinata_token = Program::pinata_token();
+        let token = Program::token();
+
+        let pinata_definition_id = AccountId::new([1; 32]);
+        let pinata_token_definition_id = AccountId::new([2; 32]);
+        // Total supply of pinata token will be in an account under a PDA.
+        let pinata_token_holding_id = AccountId::from((&pinata_token.id(), &PdaSeed::new([0; 32])));
+        let winner_token_holding_id = AccountId::new([3; 32]);
+
+        let expected_winner_account_holding = token_core::TokenHolding::Fungible {
+            definition_id: pinata_token_definition_id,
+            balance: 150,
+        };
+        let expected_winner_token_holding_post = Account {
+            program_owner: token.id(),
+            data: Data::from(&expected_winner_account_holding),
+            ..Account::default()
+        };
+
+        let mut state = V03State::new_with_genesis_accounts(&[], &[]);
+        state.add_pinata_token_program(pinata_definition_id);
+
+        // Set up the token accounts directly (bypassing public transactions which
+        // would require signers for Claim::Authorized). The focus of this test is
+        // the PDA mechanism in the pinata program's chained call, not token creation.
+        let total_supply: u128 = 10_000_000;
+        let token_definition = token_core::TokenDefinition::Fungible {
+            name: String::from("PINATA"),
+            total_supply,
+            metadata_id: None,
+        };
+        let token_holding = token_core::TokenHolding::Fungible {
+            definition_id: pinata_token_definition_id,
+            balance: total_supply,
+        };
+        let winner_holding = token_core::TokenHolding::Fungible {
+            definition_id: pinata_token_definition_id,
+            balance: 0,
+        };
+        state.force_insert_account(
+            pinata_token_definition_id,
+            Account {
+                program_owner: token.id(),
+                data: Data::from(&token_definition),
+                ..Account::default()
+            },
+        );
+        state.force_insert_account(
+            pinata_token_holding_id,
+            Account {
+                program_owner: token.id(),
+                data: Data::from(&token_holding),
+                ..Account::default()
+            },
+        );
+        state.force_insert_account(
+            winner_token_holding_id,
+            Account {
+                program_owner: token.id(),
+                data: Data::from(&winner_holding),
+                ..Account::default()
+            },
+        );
+
+        // Submit a solution to the pinata program to claim the prize
+        let solution: u128 = 989_106;
+        let message = public_transaction::Message::try_new(
+            pinata_token.id(),
+            vec![
+                pinata_definition_id,
+                pinata_token_holding_id,
+                winner_token_holding_id,
+            ],
+            vec![],
+            solution,
+        )
+        .unwrap();
+        let witness_set = public_transaction::WitnessSet::for_message(&message, &[]);
+        let tx = PublicTransaction::new(message, witness_set);
+        state.transition_from_public_transaction(&tx, 1, 0).unwrap();
+
+        let winner_token_holding_post = state.get_account_by_id(winner_token_holding_id);
+        assert_eq!(
+            winner_token_holding_post,
+            expected_winner_token_holding_post
         );
     }
 
@@ -2727,7 +2822,7 @@ pub mod tests {
         let witness_set = public_transaction::WitnessSet::for_message(&message, &[]);
         let tx = PublicTransaction::new(message, witness_set);
 
-        let result = state.transition_from_public_transaction(&tx, 1);
+        let result = state.transition_from_public_transaction(&tx, 1, 0);
 
         assert!(matches!(result, Err(NssaError::InvalidProgramBehavior)));
     }
@@ -2773,7 +2868,7 @@ pub mod tests {
 
         let witness_set = public_transaction::WitnessSet::for_message(&message, &[&sender_key]);
         let tx = PublicTransaction::new(message, witness_set);
-        let res = state.transition_from_public_transaction(&tx, 1);
+        let res = state.transition_from_public_transaction(&tx, 1, 0);
         assert!(matches!(res, Err(NssaError::InvalidProgramBehavior)));
 
         let sender_post = state.get_account_by_id(sender_id);
@@ -2842,7 +2937,7 @@ pub mod tests {
         let witness_set = WitnessSet::for_message(&message, proof, &[]);
 
         let tx = PrivacyPreservingTransaction::new(message, witness_set);
-        let result = state.transition_from_privacy_preserving_transaction(&tx, 1);
+        let result = state.transition_from_privacy_preserving_transaction(&tx, 1, 0);
         assert!(result.is_ok());
 
         let nullifier = Nullifier::for_account_initialization(&private_keys.npk());
@@ -2889,7 +2984,7 @@ pub mod tests {
         let tx = PrivacyPreservingTransaction::new(message, witness_set);
 
         state
-            .transition_from_privacy_preserving_transaction(&tx, 1)
+            .transition_from_privacy_preserving_transaction(&tx, 1, 0)
             .unwrap();
 
         let nullifier = Nullifier::for_account_initialization(&private_keys.npk());
@@ -2942,7 +3037,7 @@ pub mod tests {
         // Claim should succeed
         assert!(
             state
-                .transition_from_privacy_preserving_transaction(&tx, 1)
+                .transition_from_privacy_preserving_transaction(&tx, 1, 0)
                 .is_ok()
         );
 
@@ -2991,7 +3086,7 @@ pub mod tests {
         let witness_set = public_transaction::WitnessSet::for_message(&message, &[]);
         let tx = PublicTransaction::new(message, witness_set);
 
-        let result = state.transition_from_public_transaction(&tx, 1);
+        let result = state.transition_from_public_transaction(&tx, 1, 0);
 
         // Should succeed - no changes made, no claim needed
         assert!(result.is_ok());
@@ -3016,7 +3111,7 @@ pub mod tests {
         let witness_set = public_transaction::WitnessSet::for_message(&message, &[]);
         let tx = PublicTransaction::new(message, witness_set);
 
-        let result = state.transition_from_public_transaction(&tx, 1);
+        let result = state.transition_from_public_transaction(&tx, 1, 0);
 
         // Should fail - cannot modify data without claiming the account
         assert!(matches!(result, Err(NssaError::InvalidProgramBehavior)));
@@ -3145,7 +3240,7 @@ pub mod tests {
         validity_window: (Option<BlockId>, Option<BlockId>),
         block_id: BlockId,
     ) {
-        let validity_window: ValidityWindow = validity_window.try_into().unwrap();
+        let block_validity_window: BlockValidityWindow = validity_window.try_into().unwrap();
         let validity_window_program = Program::validity_window();
         let account_keys = test_public_account_keys_1();
         let pre = AccountWithMetadata::new(Account::default(), false, account_keys.account_id());
@@ -3154,21 +3249,76 @@ pub mod tests {
             let account_ids = vec![pre.account_id];
             let nonces = vec![];
             let program_id = validity_window_program.id();
-            let message = public_transaction::Message::try_new(
-                program_id,
-                account_ids,
-                nonces,
-                validity_window,
-            )
-            .unwrap();
+            let instruction = (
+                block_validity_window,
+                TimestampValidityWindow::new_unbounded(),
+            );
+            let message =
+                public_transaction::Message::try_new(program_id, account_ids, nonces, instruction)
+                    .unwrap();
             let witness_set = public_transaction::WitnessSet::for_message(&message, &[]);
             PublicTransaction::new(message, witness_set)
         };
-        let result = state.transition_from_public_transaction(&tx, block_id);
-        let is_inside_validity_window = match (validity_window.start(), validity_window.end()) {
-            (Some(s), Some(e)) => s <= block_id && block_id < e,
-            (Some(s), None) => s <= block_id,
-            (None, Some(e)) => block_id < e,
+        let result = state.transition_from_public_transaction(&tx, block_id, 0);
+        let is_inside_validity_window =
+            match (block_validity_window.start(), block_validity_window.end()) {
+                (Some(s), Some(e)) => s <= block_id && block_id < e,
+                (Some(s), None) => s <= block_id,
+                (None, Some(e)) => block_id < e,
+                (None, None) => true,
+            };
+        if is_inside_validity_window {
+            assert!(result.is_ok());
+        } else {
+            assert!(matches!(result, Err(NssaError::OutOfValidityWindow)));
+        }
+    }
+
+    #[test_case::test_case((Some(1), Some(3)), 3; "at upper bound")]
+    #[test_case::test_case((Some(1), Some(3)), 2; "inside range")]
+    #[test_case::test_case((Some(1), Some(3)), 0; "below range")]
+    #[test_case::test_case((Some(1), Some(3)), 1; "at lower bound")]
+    #[test_case::test_case((Some(1), Some(3)), 4; "above range")]
+    #[test_case::test_case((Some(1), None), 1; "lower bound only - at bound")]
+    #[test_case::test_case((Some(1), None), 10; "lower bound only - above")]
+    #[test_case::test_case((Some(1), None), 0; "lower bound only - below")]
+    #[test_case::test_case((None, Some(3)), 3; "upper bound only - at bound")]
+    #[test_case::test_case((None, Some(3)), 0; "upper bound only - below")]
+    #[test_case::test_case((None, Some(3)), 4; "upper bound only - above")]
+    #[test_case::test_case((None, None), 0; "no bounds - always valid")]
+    #[test_case::test_case((None, None), 100; "no bounds - always valid 2")]
+    fn timestamp_validity_window_works_in_public_transactions(
+        validity_window: (Option<Timestamp>, Option<Timestamp>),
+        timestamp: Timestamp,
+    ) {
+        let timestamp_validity_window: TimestampValidityWindow =
+            validity_window.try_into().unwrap();
+        let validity_window_program = Program::validity_window();
+        let account_keys = test_public_account_keys_1();
+        let pre = AccountWithMetadata::new(Account::default(), false, account_keys.account_id());
+        let mut state = V03State::new_with_genesis_accounts(&[], &[]).with_test_programs();
+        let tx = {
+            let account_ids = vec![pre.account_id];
+            let nonces = vec![];
+            let program_id = validity_window_program.id();
+            let instruction = (
+                BlockValidityWindow::new_unbounded(),
+                timestamp_validity_window,
+            );
+            let message =
+                public_transaction::Message::try_new(program_id, account_ids, nonces, instruction)
+                    .unwrap();
+            let witness_set = public_transaction::WitnessSet::for_message(&message, &[]);
+            PublicTransaction::new(message, witness_set)
+        };
+        let result = state.transition_from_public_transaction(&tx, 1, timestamp);
+        let is_inside_validity_window = match (
+            timestamp_validity_window.start(),
+            timestamp_validity_window.end(),
+        ) {
+            (Some(s), Some(e)) => s <= timestamp && timestamp < e,
+            (Some(s), None) => s <= timestamp,
+            (None, Some(e)) => timestamp < e,
             (None, None) => true,
         };
         if is_inside_validity_window {
@@ -3195,7 +3345,7 @@ pub mod tests {
         validity_window: (Option<BlockId>, Option<BlockId>),
         block_id: BlockId,
     ) {
-        let validity_window: ValidityWindow = validity_window.try_into().unwrap();
+        let block_validity_window: BlockValidityWindow = validity_window.try_into().unwrap();
         let validity_window_program = Program::validity_window();
         let account_keys = test_private_account_keys_1();
         let pre = AccountWithMetadata::new(Account::default(), false, &account_keys.npk());
@@ -3205,9 +3355,13 @@ pub mod tests {
             let shared_secret = SharedSecretKey::new(&esk, &account_keys.vpk());
             let epk = EphemeralPublicKey::from_scalar(esk);
 
+            let instruction = (
+                block_validity_window,
+                TimestampValidityWindow::new_unbounded(),
+            );
             let (output, proof) = circuit::execute_and_prove(
                 vec![pre],
-                Program::serialize_instruction(validity_window).unwrap(),
+                Program::serialize_instruction(instruction).unwrap(),
                 vec![2],
                 vec![(account_keys.npk(), shared_secret)],
                 vec![],
@@ -3227,11 +3381,83 @@ pub mod tests {
             let witness_set = WitnessSet::for_message(&message, proof, &[]);
             PrivacyPreservingTransaction::new(message, witness_set)
         };
-        let result = state.transition_from_privacy_preserving_transaction(&tx, block_id);
-        let is_inside_validity_window = match (validity_window.start(), validity_window.end()) {
-            (Some(s), Some(e)) => s <= block_id && block_id < e,
-            (Some(s), None) => s <= block_id,
-            (None, Some(e)) => block_id < e,
+        let result = state.transition_from_privacy_preserving_transaction(&tx, block_id, 0);
+        let is_inside_validity_window =
+            match (block_validity_window.start(), block_validity_window.end()) {
+                (Some(s), Some(e)) => s <= block_id && block_id < e,
+                (Some(s), None) => s <= block_id,
+                (None, Some(e)) => block_id < e,
+                (None, None) => true,
+            };
+        if is_inside_validity_window {
+            assert!(result.is_ok());
+        } else {
+            assert!(matches!(result, Err(NssaError::OutOfValidityWindow)));
+        }
+    }
+
+    #[test_case::test_case((Some(1), Some(3)), 3; "at upper bound")]
+    #[test_case::test_case((Some(1), Some(3)), 2; "inside range")]
+    #[test_case::test_case((Some(1), Some(3)), 0; "below range")]
+    #[test_case::test_case((Some(1), Some(3)), 1; "at lower bound")]
+    #[test_case::test_case((Some(1), Some(3)), 4; "above range")]
+    #[test_case::test_case((Some(1), None), 1; "lower bound only - at bound")]
+    #[test_case::test_case((Some(1), None), 10; "lower bound only - above")]
+    #[test_case::test_case((Some(1), None), 0; "lower bound only - below")]
+    #[test_case::test_case((None, Some(3)), 3; "upper bound only - at bound")]
+    #[test_case::test_case((None, Some(3)), 0; "upper bound only - below")]
+    #[test_case::test_case((None, Some(3)), 4; "upper bound only - above")]
+    #[test_case::test_case((None, None), 0; "no bounds - always valid")]
+    #[test_case::test_case((None, None), 100; "no bounds - always valid 2")]
+    fn timestamp_validity_window_works_in_privacy_preserving_transactions(
+        validity_window: (Option<Timestamp>, Option<Timestamp>),
+        timestamp: Timestamp,
+    ) {
+        let timestamp_validity_window: TimestampValidityWindow =
+            validity_window.try_into().unwrap();
+        let validity_window_program = Program::validity_window();
+        let account_keys = test_private_account_keys_1();
+        let pre = AccountWithMetadata::new(Account::default(), false, &account_keys.npk());
+        let mut state = V03State::new_with_genesis_accounts(&[], &[]).with_test_programs();
+        let tx = {
+            let esk = [3; 32];
+            let shared_secret = SharedSecretKey::new(&esk, &account_keys.vpk());
+            let epk = EphemeralPublicKey::from_scalar(esk);
+
+            let instruction = (
+                BlockValidityWindow::new_unbounded(),
+                timestamp_validity_window,
+            );
+            let (output, proof) = circuit::execute_and_prove(
+                vec![pre],
+                Program::serialize_instruction(instruction).unwrap(),
+                vec![2],
+                vec![(account_keys.npk(), shared_secret)],
+                vec![],
+                vec![None],
+                &validity_window_program.into(),
+            )
+            .unwrap();
+
+            let message = Message::try_from_circuit_output(
+                vec![],
+                vec![],
+                vec![(account_keys.npk(), account_keys.vpk(), epk)],
+                output,
+            )
+            .unwrap();
+
+            let witness_set = WitnessSet::for_message(&message, proof, &[]);
+            PrivacyPreservingTransaction::new(message, witness_set)
+        };
+        let result = state.transition_from_privacy_preserving_transaction(&tx, 1, timestamp);
+        let is_inside_validity_window = match (
+            timestamp_validity_window.start(),
+            timestamp_validity_window.end(),
+        ) {
+            (Some(s), Some(e)) => s <= timestamp && timestamp < e,
+            (Some(s), None) => s <= timestamp,
+            (None, Some(e)) => timestamp < e,
             (None, None) => true,
         };
         if is_inside_validity_window {

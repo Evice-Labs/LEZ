@@ -3,8 +3,9 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use borsh::{BorshDeserialize, BorshSerialize};
 use log::debug;
 use nssa_core::{
+    BlockId, Timestamp,
     account::{Account, AccountId, AccountWithMetadata},
-    program::{BlockId, ChainedCall, Claim, DEFAULT_PROGRAM_ID, validate_execution},
+    program::{ChainedCall, Claim, DEFAULT_PROGRAM_ID, validate_execution},
 };
 use sha2::{Digest as _, digest::FixedOutput as _};
 
@@ -71,6 +72,7 @@ impl PublicTransaction {
         &self,
         state: &V03State,
         block_id: BlockId,
+        timestamp: Timestamp,
     ) -> Result<HashMap<AccountId, Account>, NssaError> {
         let message = self.message();
         let witness_set = self.witness_set();
@@ -195,9 +197,10 @@ impl PublicTransaction {
 
             // Verify validity window
             ensure!(
-                program_output
-                    .validity_window
-                    .is_valid_for_block_id(block_id),
+                program_output.block_validity_window.is_valid_for(block_id)
+                    && program_output
+                        .timestamp_validity_window
+                        .is_valid_for(timestamp),
                 NssaError::OutOfValidityWindow
             );
 
@@ -388,7 +391,7 @@ pub mod tests {
 
         let witness_set = WitnessSet::for_message(&message, &[&key1, &key1]);
         let tx = PublicTransaction::new(message, witness_set);
-        let result = tx.validate_and_produce_public_state_diff(&state, 1);
+        let result = tx.validate_and_produce_public_state_diff(&state, 1, 0);
         assert!(matches!(result, Err(NssaError::InvalidInput(_))));
     }
 
@@ -408,7 +411,7 @@ pub mod tests {
 
         let witness_set = WitnessSet::for_message(&message, &[&key1, &key2]);
         let tx = PublicTransaction::new(message, witness_set);
-        let result = tx.validate_and_produce_public_state_diff(&state, 1);
+        let result = tx.validate_and_produce_public_state_diff(&state, 1, 0);
         assert!(matches!(result, Err(NssaError::InvalidInput(_))));
     }
 
@@ -429,7 +432,7 @@ pub mod tests {
         let mut witness_set = WitnessSet::for_message(&message, &[&key1, &key2]);
         witness_set.signatures_and_public_keys[0].0 = Signature::new_for_tests([1; 64]);
         let tx = PublicTransaction::new(message, witness_set);
-        let result = tx.validate_and_produce_public_state_diff(&state, 1);
+        let result = tx.validate_and_produce_public_state_diff(&state, 1, 0);
         assert!(matches!(result, Err(NssaError::InvalidInput(_))));
     }
 
@@ -449,7 +452,7 @@ pub mod tests {
 
         let witness_set = WitnessSet::for_message(&message, &[&key1, &key2]);
         let tx = PublicTransaction::new(message, witness_set);
-        let result = tx.validate_and_produce_public_state_diff(&state, 1);
+        let result = tx.validate_and_produce_public_state_diff(&state, 1, 0);
         assert!(matches!(result, Err(NssaError::InvalidInput(_))));
     }
 
@@ -465,7 +468,7 @@ pub mod tests {
 
         let witness_set = WitnessSet::for_message(&message, &[&key1, &key2]);
         let tx = PublicTransaction::new(message, witness_set);
-        let result = tx.validate_and_produce_public_state_diff(&state, 1);
+        let result = tx.validate_and_produce_public_state_diff(&state, 1, 0);
         assert!(matches!(result, Err(NssaError::InvalidInput(_))));
     }
 }

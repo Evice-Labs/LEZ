@@ -2733,7 +2733,7 @@ fn simple_amm_remove() {
     );
 
     let tx = PublicTransaction::new(message, witness_set);
-    state.transition_from_public_transaction(&tx, 1).unwrap();
+    state.transition_from_public_transaction(&tx, 1, 0).unwrap();
 
     let pool_post = state.get_account_by_id(IdForExeTests::pool_definition_id());
     let vault_a_post = state.get_account_by_id(IdForExeTests::vault_a_id());
@@ -2814,7 +2814,7 @@ fn simple_amm_new_definition_inactive_initialized_pool_and_uninit_user_lp() {
     );
 
     let tx = PublicTransaction::new(message, witness_set);
-    state.transition_from_public_transaction(&tx, 1).unwrap();
+    state.transition_from_public_transaction(&tx, 1, 0).unwrap();
 
     let pool_post = state.get_account_by_id(IdForExeTests::pool_definition_id());
     let vault_a_post = state.get_account_by_id(IdForExeTests::vault_a_id());
@@ -2898,7 +2898,7 @@ fn simple_amm_new_definition_inactive_initialized_pool_init_user_lp() {
     );
 
     let tx = PublicTransaction::new(message, witness_set);
-    state.transition_from_public_transaction(&tx, 1).unwrap();
+    state.transition_from_public_transaction(&tx, 1, 0).unwrap();
 
     let pool_post = state.get_account_by_id(IdForExeTests::pool_definition_id());
     let vault_a_post = state.get_account_by_id(IdForExeTests::vault_a_id());
@@ -2971,7 +2971,7 @@ fn simple_amm_new_definition_uninitialized_pool() {
     );
 
     let tx = PublicTransaction::new(message, witness_set);
-    state.transition_from_public_transaction(&tx, 1).unwrap();
+    state.transition_from_public_transaction(&tx, 1, 0).unwrap();
 
     let pool_post = state.get_account_by_id(IdForExeTests::pool_definition_id());
     let vault_a_post = state.get_account_by_id(IdForExeTests::vault_a_id());
@@ -3033,7 +3033,7 @@ fn simple_amm_add() {
     );
 
     let tx = PublicTransaction::new(message, witness_set);
-    state.transition_from_public_transaction(&tx, 1).unwrap();
+    state.transition_from_public_transaction(&tx, 1, 0).unwrap();
 
     let pool_post = state.get_account_by_id(IdForExeTests::pool_definition_id());
     let vault_a_post = state.get_account_by_id(IdForExeTests::vault_a_id());
@@ -3090,7 +3090,7 @@ fn simple_amm_swap_1() {
     );
 
     let tx = PublicTransaction::new(message, witness_set);
-    state.transition_from_public_transaction(&tx, 1).unwrap();
+    state.transition_from_public_transaction(&tx, 1, 0).unwrap();
 
     let pool_post = state.get_account_by_id(IdForExeTests::pool_definition_id());
     let vault_a_post = state.get_account_by_id(IdForExeTests::vault_a_id());
@@ -3140,7 +3140,7 @@ fn simple_amm_swap_2() {
     );
 
     let tx = PublicTransaction::new(message, witness_set);
-    state.transition_from_public_transaction(&tx, 1).unwrap();
+    state.transition_from_public_transaction(&tx, 1, 0).unwrap();
 
     let pool_post = state.get_account_by_id(IdForExeTests::pool_definition_id());
     let vault_a_post = state.get_account_by_id(IdForExeTests::vault_a_id());
