@@ -207,7 +207,22 @@ impl<BC: BlockSettlementClientTrait, IC: IndexerClientTrait> SequencerCore<BC, I
             .expect("Timestamp must be positive");
 
         let clock_program_id = nssa::program::Program::clock().id();
-        let clock_account_pre = self.state.get_account_by_id(nssa::CLOCK_PROGRAM_ACCOUNT_ID);
+        let clock_accounts_pre = [
+            (
+                nssa::CLOCK_01_PROGRAM_ACCOUNT_ID,
+                self.state.get_account_by_id(nssa::CLOCK_01_PROGRAM_ACCOUNT_ID),
+            ),
+            (
+                nssa::CLOCK_10_PROGRAM_ACCOUNT_ID,
+                self.state
+                    .get_account_by_id(nssa::CLOCK_10_PROGRAM_ACCOUNT_ID),
+            ),
+            (
+                nssa::CLOCK_50_PROGRAM_ACCOUNT_ID,
+                self.state
+                    .get_account_by_id(nssa::CLOCK_50_PROGRAM_ACCOUNT_ID),
+            ),
+        ];
 
         while let Some(tx) = self.mempool.pop() {
             let tx_hash = tx.hash();
@@ -217,9 +232,9 @@ impl<BC: BlockSettlementClientTrait, IC: IndexerClientTrait> SequencerCore<BC, I
             // - any PP tx that declares a modified post-state for the clock account.
             let touches_system = match &tx {
                 NSSATransaction::Public(p) => p.message().program_id == clock_program_id,
-                NSSATransaction::PrivacyPreserving(pp) => pp
-                    .public_post_state_for(&nssa::CLOCK_PROGRAM_ACCOUNT_ID)
-                    .is_some_and(|post| post != &clock_account_pre),
+                NSSATransaction::PrivacyPreserving(pp) => clock_accounts_pre
+                    .iter()
+                    .any(|(id, pre)| pp.public_post_state_for(id).is_some_and(|post| post != pre)),
                 NSSATransaction::ProgramDeployment(_) => false,
             };
             if touches_system {

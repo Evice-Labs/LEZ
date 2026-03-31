@@ -16,8 +16,14 @@ use crate::{
 
 pub const MAX_NUMBER_CHAINED_CALLS: usize = 10;
 
-pub const CLOCK_PROGRAM_ACCOUNT_ID: AccountId =
+pub const CLOCK_01_PROGRAM_ACCOUNT_ID: AccountId =
     AccountId::new(*b"/LEZ/ClockProgramAccount/0000001");
+
+pub const CLOCK_10_PROGRAM_ACCOUNT_ID: AccountId =
+    AccountId::new(*b"/LEZ/ClockProgramAccount/0000010");
+
+pub const CLOCK_50_PROGRAM_ACCOUNT_ID: AccountId =
+    AccountId::new(*b"/LEZ/ClockProgramAccount/0000050");
 
 #[derive(Clone, BorshSerialize, BorshDeserialize)]
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
@@ -160,17 +166,24 @@ impl V03State {
     fn insert_clock_accounts(&mut self, genesis_timestamp: nssa_core::Timestamp) {
         let mut data = [0u8; 16];
         data[8..].copy_from_slice(&genesis_timestamp.to_le_bytes());
-        self.public_state.insert(
-            CLOCK_PROGRAM_ACCOUNT_ID,
-            Account {
-                program_owner: Program::clock().id(),
-                data: data
-                    .to_vec()
-                    .try_into()
-                    .expect("16 bytes should fit within accounts data"),
-                ..Account::default()
-            },
-        );
+        let clock_program_id = Program::clock().id();
+        for account_id in [
+            CLOCK_01_PROGRAM_ACCOUNT_ID,
+            CLOCK_10_PROGRAM_ACCOUNT_ID,
+            CLOCK_50_PROGRAM_ACCOUNT_ID,
+        ] {
+            self.public_state.insert(
+                account_id,
+                Account {
+                    program_owner: clock_program_id,
+                    data: data
+                        .to_vec()
+                        .try_into()
+                        .expect("16 bytes should fit within accounts data"),
+                    ..Account::default()
+                },
+            );
+        }
     }
 
     pub(crate) fn insert_program(&mut self, program: Program) {
@@ -377,7 +390,10 @@ pub mod tests {
         program::Program,
         public_transaction,
         signature::PrivateKey,
-        state::{CLOCK_PROGRAM_ACCOUNT_ID, MAX_NUMBER_CHAINED_CALLS},
+        state::{
+            CLOCK_10_PROGRAM_ACCOUNT_ID, CLOCK_50_PROGRAM_ACCOUNT_ID, CLOCK_01_PROGRAM_ACCOUNT_ID,
+            MAX_NUMBER_CHAINED_CALLS,
+        },
     };
 
     impl V03State {
@@ -515,17 +531,23 @@ pub mod tests {
                     ..Account::default()
                 },
             );
-            this.insert(
-                CLOCK_PROGRAM_ACCOUNT_ID,
-                Account {
-                    program_owner: clock_program.id(),
-                    data: [0u8; 16]
-                        .to_vec()
-                        .try_into()
-                        .unwrap(),
-                    ..Account::default()
-                },
-            );
+            for account_id in [
+                CLOCK_01_PROGRAM_ACCOUNT_ID,
+                CLOCK_10_PROGRAM_ACCOUNT_ID,
+                CLOCK_50_PROGRAM_ACCOUNT_ID,
+            ] {
+                this.insert(
+                    account_id,
+                    Account {
+                        program_owner: clock_program.id(),
+                        data: [0u8; 16]
+                            .to_vec()
+                            .try_into()
+                            .unwrap(),
+                        ..Account::default()
+                    },
+                );
+            }
             this
         };
         let expected_builtin_programs = {
@@ -684,7 +706,11 @@ pub mod tests {
     fn clock_transaction(timestamp: nssa_core::Timestamp) -> PublicTransaction {
         let message = public_transaction::Message::try_new(
             Program::clock().id(),
-            vec![CLOCK_PROGRAM_ACCOUNT_ID],
+            vec![
+                CLOCK_01_PROGRAM_ACCOUNT_ID,
+                CLOCK_10_PROGRAM_ACCOUNT_ID,
+                CLOCK_50_PROGRAM_ACCOUNT_ID,
+            ],
             vec![],
             timestamp,
         )
@@ -695,11 +721,11 @@ pub mod tests {
         )
     }
 
-    fn clock_account_data(state: &V03State) -> (u64, nssa_core::Timestamp) {
-        let data = state
-            .get_account_by_id(CLOCK_PROGRAM_ACCOUNT_ID)
-            .data
-            .into_inner();
+    fn clock_account_data(
+        state: &V03State,
+        account_id: AccountId,
+    ) -> (u64, nssa_core::Timestamp) {
+        let data = state.get_account_by_id(account_id).data.into_inner();
         let block_id = u64::from_le_bytes(data[..8].try_into().unwrap());
         let timestamp = u64::from_le_bytes(data[8..].try_into().unwrap());
         (block_id, timestamp)
@@ -710,7 +736,7 @@ pub mod tests {
         let genesis_timestamp = 1_000_000u64;
         let state = V03State::new_with_genesis_accounts(&[], &[], genesis_timestamp);
 
-        let (block_id, timestamp) = clock_account_data(&state);
+        let (block_id, timestamp) = clock_account_data(&state, CLOCK_01_PROGRAM_ACCOUNT_ID);
 
         assert_eq!(block_id, 0);
         assert_eq!(timestamp, genesis_timestamp);
@@ -723,7 +749,7 @@ pub mod tests {
         let tx = clock_transaction(1234);
         state.transition_from_public_transaction(&tx).unwrap();
 
-        let (block_id, _) = clock_account_data(&state);
+        let (block_id, _) = clock_account_data(&state, CLOCK_01_PROGRAM_ACCOUNT_ID);
         assert_eq!(block_id, 1);
     }
 
@@ -735,7 +761,7 @@ pub mod tests {
         let tx = clock_transaction(block_timestamp);
         state.transition_from_public_transaction(&tx).unwrap();
 
-        let (_, timestamp) = clock_account_data(&state);
+        let (_, timestamp) = clock_account_data(&state, CLOCK_01_PROGRAM_ACCOUNT_ID);
         assert_eq!(timestamp, block_timestamp);
     }
 
@@ -747,10 +773,88 @@ pub mod tests {
             let tx = clock_transaction(expected_block_id * 1000);
             state.transition_from_public_transaction(&tx).unwrap();
 
-            let (block_id, timestamp) = clock_account_data(&state);
+            let (block_id, timestamp) = clock_account_data(&state, CLOCK_01_PROGRAM_ACCOUNT_ID);
             assert_eq!(block_id, expected_block_id);
             assert_eq!(timestamp, expected_block_id * 1000);
         }
+    }
+
+    #[test]
+    fn clock_10_account_not_updated_when_block_id_not_multiple_of_10() {
+        let genesis_timestamp = 0u64;
+        let mut state = V03State::new_with_genesis_accounts(&[], &[], genesis_timestamp);
+
+        // Run 9 clock ticks (block_ids 1..=9), none of which are multiples of 10.
+        for tick in 1u64..=9 {
+            let tx = clock_transaction(tick * 1000);
+            state.transition_from_public_transaction(&tx).unwrap();
+        }
+
+        let (block_id_10, timestamp_10) =
+            clock_account_data(&state, CLOCK_10_PROGRAM_ACCOUNT_ID);
+        // The 10-block account should still reflect genesis state.
+        assert_eq!(block_id_10, 0);
+        assert_eq!(timestamp_10, genesis_timestamp);
+    }
+
+    #[test]
+    fn clock_10_account_updated_when_block_id_is_multiple_of_10() {
+        let mut state = V03State::new_with_genesis_accounts(&[], &[], 0);
+
+        // Run 10 clock ticks so block_id reaches 10.
+        for tick in 1u64..=10 {
+            let tx = clock_transaction(tick * 1000);
+            state.transition_from_public_transaction(&tx).unwrap();
+        }
+
+        let (block_id_1, timestamp_1) = clock_account_data(&state, CLOCK_01_PROGRAM_ACCOUNT_ID);
+        let (block_id_10, timestamp_10) =
+            clock_account_data(&state, CLOCK_10_PROGRAM_ACCOUNT_ID);
+        assert_eq!(block_id_1, 10);
+        assert_eq!(block_id_10, 10);
+        assert_eq!(timestamp_10, timestamp_1);
+    }
+
+    #[test]
+    fn clock_50_account_only_updated_at_multiples_of_50() {
+        let mut state = V03State::new_with_genesis_accounts(&[], &[], 0);
+
+        // After 49 ticks the 50-block account should be unchanged.
+        for tick in 1u64..=49 {
+            let tx = clock_transaction(tick * 1000);
+            state.transition_from_public_transaction(&tx).unwrap();
+        }
+        let (block_id_50, _) = clock_account_data(&state, CLOCK_50_PROGRAM_ACCOUNT_ID);
+        assert_eq!(block_id_50, 0);
+
+        // Tick 50 — now the 50-block account should update.
+        let tx = clock_transaction(50 * 1000);
+        state.transition_from_public_transaction(&tx).unwrap();
+        let (block_id_50, timestamp_50) =
+            clock_account_data(&state, CLOCK_50_PROGRAM_ACCOUNT_ID);
+        assert_eq!(block_id_50, 50);
+        assert_eq!(timestamp_50, 50 * 1000);
+    }
+
+    #[test]
+    fn all_three_clock_accounts_updated_at_multiple_of_50() {
+        let mut state = V03State::new_with_genesis_accounts(&[], &[], 0);
+
+        // Advance to block 50 (a multiple of both 10 and 50).
+        for tick in 1u64..=50 {
+            let tx = clock_transaction(tick * 1000);
+            state.transition_from_public_transaction(&tx).unwrap();
+        }
+
+        let (block_id_1, ts_1) = clock_account_data(&state, CLOCK_01_PROGRAM_ACCOUNT_ID);
+        let (block_id_10, ts_10) = clock_account_data(&state, CLOCK_10_PROGRAM_ACCOUNT_ID);
+        let (block_id_50, ts_50) = clock_account_data(&state, CLOCK_50_PROGRAM_ACCOUNT_ID);
+
+        assert_eq!(block_id_1, 50);
+        assert_eq!(block_id_10, 50);
+        assert_eq!(block_id_50, 50);
+        assert_eq!(ts_1, ts_10);
+        assert_eq!(ts_1, ts_50);
     }
 
     #[test]

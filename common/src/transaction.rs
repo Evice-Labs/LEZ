@@ -49,7 +49,11 @@ impl NSSATransaction {
     pub fn clock_invocation(timestamp: nssa_core::Timestamp) -> Self {
         let message = nssa::public_transaction::Message::try_new(
             nssa::program::Program::clock().id(),
-            vec![nssa::CLOCK_PROGRAM_ACCOUNT_ID],
+            vec![
+                nssa::CLOCK_01_PROGRAM_ACCOUNT_ID,
+                nssa::CLOCK_10_PROGRAM_ACCOUNT_ID,
+                nssa::CLOCK_50_PROGRAM_ACCOUNT_ID,
+            ],
             vec![],
             timestamp,
         )
