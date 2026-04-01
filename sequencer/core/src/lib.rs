@@ -225,38 +225,20 @@ impl<BC: BlockSettlementClientTrait, IC: IndexerClientTrait> SequencerCore<BC, I
         let new_block_timestamp = u64::try_from(chrono::Utc::now().timestamp_millis())
             .expect("Timestamp must be positive");
 
-        let clock_program_id = nssa::program::Program::clock().id();
-        let clock_accounts_pre = [
-            (
-                nssa::CLOCK_01_PROGRAM_ACCOUNT_ID,
-                self.state
-                    .get_account_by_id(nssa::CLOCK_01_PROGRAM_ACCOUNT_ID),
-            ),
-            (
-                nssa::CLOCK_10_PROGRAM_ACCOUNT_ID,
-                self.state
-                    .get_account_by_id(nssa::CLOCK_10_PROGRAM_ACCOUNT_ID),
-            ),
-            (
-                nssa::CLOCK_50_PROGRAM_ACCOUNT_ID,
-                self.state
-                    .get_account_by_id(nssa::CLOCK_50_PROGRAM_ACCOUNT_ID),
-            ),
-        ];
+        // Note: the clock accounts are only modified by the clock program, which is invoked
+        // exclusively by the sequencer as the mandatory last transaction in each block. All user
+        // transactions are processed before that invocation, so this snapshot is always current
+        // and constant for all transactions in the block
+        let clock_accounts_pre =
+            nssa::CLOCK_PROGRAM_ACCOUNT_IDS.map(|id| (id, self.state.get_account_by_id(id)));
 
         while let Some(tx) = self.mempool.pop() {
             let tx_hash = tx.hash();
 
             // The Block Context Program is system-only. Reject:
-            // - any public tx that invokes the clock program ID, and
-            // - any PP tx that declares a modified post-state for the clock account.
-            let touches_system = match &tx {
-                NSSATransaction::Public(p) => p.message().program_id == clock_program_id,
-                NSSATransaction::PrivacyPreserving(pp) => clock_accounts_pre
-                    .iter()
-                    .any(|(id, pre)| pp.public_post_state_for(id).is_some_and(|post| post != pre)),
-                NSSATransaction::ProgramDeployment(_) => false,
-            };
+            // - any public tx that invokes the clock program, and
+            // - any PP tx that declares a modified post-state for a clock account.
+            let touches_system = tx.is_invocation_of_clock_program(&clock_accounts_pre);
             if touches_system {
                 warn!(
                     "Dropping transaction from mempool: user transactions may not modify the system clock account"
@@ -310,15 +292,14 @@ impl<BC: BlockSettlementClientTrait, IC: IndexerClientTrait> SequencerCore<BC, I
         }
 
         // Append the Block Context Program invocation as the mandatory last transaction.
-        match self.execute_check_transaction_on_state(NSSATransaction::clock_invocation(new_block_timestamp), new_block_height, new_block_timestamp)
-        {
-            Ok(clock_nssa_tx) => {
-                valid_transactions.push(clock_nssa_tx);
-            }
-            Err(err) => {
-                error!("Clock transaction failed execution check: {err:#?}");
-            }
-        }
+        let clock_nssa_tx = self
+            .execute_check_transaction_on_state(
+                NSSATransaction::clock_invocation(new_block_timestamp),
+                new_block_height,
+                new_block_timestamp,
+            )
+            .context("Clock transaction failed — aborting block production")?;
+        valid_transactions.push(clock_nssa_tx);
 
         let hashable_data = HashableBlockData {
             block_id: new_block_height,

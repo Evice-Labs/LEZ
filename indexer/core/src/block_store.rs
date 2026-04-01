@@ -136,7 +136,7 @@ impl IndexerStore {
                 .body
                 .transactions
                 .iter()
-                .filter(|tx| *tx == &expected_clock_tx)
+                .filter(|tx| tx.is_invocation_of_clock_program(&[]))
                 .count();
             anyhow::ensure!(
                 clock_count == 1,

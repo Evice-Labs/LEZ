@@ -1,9 +1,11 @@
+use clock_core::{
+    CLOCK_01_PROGRAM_ACCOUNT_ID, CLOCK_10_PROGRAM_ACCOUNT_ID, CLOCK_50_PROGRAM_ACCOUNT_ID,
+    ClockAccountData, Instruction,
+};
 use nssa_core::{
     account::AccountWithMetadata,
     program::{AccountPostState, ProgramInput, ProgramOutput, read_nssa_inputs},
 };
-
-type Instruction = nssa_core::Timestamp;
 
 fn update_if_multiple(
     pre: AccountWithMetadata,
@@ -34,24 +36,28 @@ fn main() {
     ) = read_nssa_inputs::<Instruction>();
 
     let Ok([pre_01, pre_10, pre_50]) = <[_; 3]>::try_from(pre_states) else {
-        return;
+        panic!("Invalid number of input accounts");
     };
 
-    let prev_block_id = u64::from_le_bytes(
-        pre_01.account.data.clone().into_inner()[..8]
+    // Verify pre-states correspond to the expected clock account IDs.
+    if pre_01.account_id != CLOCK_01_PROGRAM_ACCOUNT_ID
+        || pre_10.account_id != CLOCK_10_PROGRAM_ACCOUNT_ID
+        || pre_50.account_id != CLOCK_50_PROGRAM_ACCOUNT_ID
+    {
+        panic!("Invalid input accounts");
+    }
+
+    let prev_data = ClockAccountData::from_bytes(
+        pre_01.account.data.clone().into_inner()[..16]
             .try_into()
-            .expect("Clock account data should contain a LE-encoded block_id u64"),
+            .expect("Clock account data should be 16 bytes"),
     );
-    let current_block_id = prev_block_id
+    let current_block_id = prev_data
+        .block_id
         .checked_add(1)
         .expect("Next block id should be within u64 boundaries");
 
-    let updated_data = {
-        let mut data = [0_u8; 16];
-        data[..8].copy_from_slice(&current_block_id.to_le_bytes());
-        data[8..].copy_from_slice(&timestamp.to_le_bytes());
-        data
-    };
+    let updated_data = ClockAccountData { block_id: current_block_id, timestamp }.to_bytes();
 
     let (pre_01, post_01) = update_if_multiple(pre_01, 1, current_block_id, updated_data);
     let (pre_10, post_10) = update_if_multiple(pre_10, 10, current_block_id, updated_data);
@@ -61,5 +67,6 @@ fn main() {
         instruction_words,
         vec![pre_01, pre_10, pre_50],
         vec![post_01, post_10, post_50],
-    ).write();
+    )
+    .write();
 }

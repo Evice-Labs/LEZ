@@ -8,6 +8,12 @@ use nssa_core::{
     program::ProgramId,
 };
 
+pub use clock_core::{
+    CLOCK_01_PROGRAM_ACCOUNT_ID, CLOCK_10_PROGRAM_ACCOUNT_ID, CLOCK_50_PROGRAM_ACCOUNT_ID,
+    CLOCK_PROGRAM_ACCOUNT_IDS,
+};
+use clock_core::ClockAccountData;
+
 use crate::{
     error::NssaError, merkle_tree::MerkleTree,
     privacy_preserving_transaction::PrivacyPreservingTransaction, program::Program,
@@ -16,15 +22,6 @@ use crate::{
 };
 
 pub const MAX_NUMBER_CHAINED_CALLS: usize = 10;
-
-pub const CLOCK_01_PROGRAM_ACCOUNT_ID: AccountId =
-    AccountId::new(*b"/LEZ/ClockProgramAccount/0000001");
-
-pub const CLOCK_10_PROGRAM_ACCOUNT_ID: AccountId =
-    AccountId::new(*b"/LEZ/ClockProgramAccount/0000010");
-
-pub const CLOCK_50_PROGRAM_ACCOUNT_ID: AccountId =
-    AccountId::new(*b"/LEZ/ClockProgramAccount/0000050");
 
 #[derive(Clone, BorshSerialize, BorshDeserialize)]
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
@@ -166,14 +163,9 @@ impl V03State {
     }
 
     fn insert_clock_accounts(&mut self, genesis_timestamp: nssa_core::Timestamp) {
-        let mut data = [0_u8; 16];
-        data[8..].copy_from_slice(&genesis_timestamp.to_le_bytes());
+        let data = ClockAccountData { block_id: 0, timestamp: genesis_timestamp }.to_bytes();
         let clock_program_id = Program::clock().id();
-        for account_id in [
-            CLOCK_01_PROGRAM_ACCOUNT_ID,
-            CLOCK_10_PROGRAM_ACCOUNT_ID,
-            CLOCK_50_PROGRAM_ACCOUNT_ID,
-        ] {
+        for account_id in CLOCK_PROGRAM_ACCOUNT_IDS {
             self.public_state.insert(
                 account_id,
                 Account {
@@ -400,7 +392,7 @@ pub mod tests {
         signature::PrivateKey,
         state::{
             CLOCK_01_PROGRAM_ACCOUNT_ID, CLOCK_10_PROGRAM_ACCOUNT_ID, CLOCK_50_PROGRAM_ACCOUNT_ID,
-            MAX_NUMBER_CHAINED_CALLS,
+            CLOCK_PROGRAM_ACCOUNT_IDS, MAX_NUMBER_CHAINED_CALLS,
         },
     };
 
@@ -543,11 +535,7 @@ pub mod tests {
                     ..Account::default()
                 },
             );
-            for account_id in [
-                CLOCK_01_PROGRAM_ACCOUNT_ID,
-                CLOCK_10_PROGRAM_ACCOUNT_ID,
-                CLOCK_50_PROGRAM_ACCOUNT_ID,
-            ] {
+            for account_id in CLOCK_PROGRAM_ACCOUNT_IDS {
                 this.insert(
                     account_id,
                     Account {
@@ -736,11 +724,7 @@ pub mod tests {
     fn clock_transaction(timestamp: nssa_core::Timestamp) -> PublicTransaction {
         let message = public_transaction::Message::try_new(
             Program::clock().id(),
-            vec![
-                CLOCK_01_PROGRAM_ACCOUNT_ID,
-                CLOCK_10_PROGRAM_ACCOUNT_ID,
-                CLOCK_50_PROGRAM_ACCOUNT_ID,
-            ],
+            CLOCK_PROGRAM_ACCOUNT_IDS.to_vec(),
             vec![],
             timestamp,
         )
@@ -753,9 +737,8 @@ pub mod tests {
 
     fn clock_account_data(state: &V03State, account_id: AccountId) -> (u64, nssa_core::Timestamp) {
         let data = state.get_account_by_id(account_id).data.into_inner();
-        let block_id = u64::from_le_bytes(data[..8].try_into().unwrap());
-        let timestamp = u64::from_le_bytes(data[8..].try_into().unwrap());
-        (block_id, timestamp)
+        let parsed = clock_core::ClockAccountData::from_bytes(data[..16].try_into().unwrap());
+        (parsed.block_id, parsed.timestamp)
     }
 
     #[test]

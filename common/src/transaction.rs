@@ -47,14 +47,10 @@ impl NSSATransaction {
     /// Returns the canonical Block Context Program invocation transaction for the given block
     /// timestamp. Every valid block must end with exactly one occurrence of this transaction.
     #[must_use]
-    pub fn clock_invocation(timestamp: nssa_core::Timestamp) -> Self {
+    pub fn clock_invocation(timestamp: clock_core::Instruction) -> Self {
         let message = nssa::public_transaction::Message::try_new(
             nssa::program::Program::clock().id(),
-            vec![
-                nssa::CLOCK_01_PROGRAM_ACCOUNT_ID,
-                nssa::CLOCK_10_PROGRAM_ACCOUNT_ID,
-                nssa::CLOCK_50_PROGRAM_ACCOUNT_ID,
-            ],
+            clock_core::CLOCK_PROGRAM_ACCOUNT_IDS.to_vec(),
             vec![],
             timestamp,
         )
@@ -63,6 +59,28 @@ impl NSSATransaction {
             message,
             nssa::public_transaction::WitnessSet::from_raw_parts(vec![]),
         ))
+    }
+
+    /// Returns `true` if this transaction is a user invocation of the clock program.
+    ///
+    /// For public transactions: checks whether the program ID matches the clock program.
+    /// For privacy-preserving transactions: checks whether any clock account has a modified
+    /// post-state (i.e. `post != pre`), using the provided pre-state snapshot.
+    /// Pass an empty slice when only the public case is relevant (e.g. in committed blocks where
+    /// PP clock-touching transactions are already filtered out by the sequencer).
+    #[must_use]
+    pub fn is_invocation_of_clock_program(
+        &self,
+        clock_pre_states: &[(nssa::AccountId, nssa::Account)],
+    ) -> bool {
+        let clock_program_id = nssa::program::Program::clock().id();
+        match self {
+            Self::Public(tx) => tx.message().program_id == clock_program_id,
+            Self::PrivacyPreserving(pp) => clock_pre_states
+                .iter()
+                .any(|(id, pre)| pp.public_post_state_for(id).is_some_and(|post| post != pre)),
+            Self::ProgramDeployment(_) => false,
+        }
     }
 
     // TODO: Introduce type-safe wrapper around checked transaction, e.g. AuthenticatedTransaction
