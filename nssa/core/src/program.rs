@@ -16,6 +16,7 @@ pub const MAX_NUMBER_CHAINED_CALLS: usize = 10;
 pub type ProgramId = [u32; 8];
 pub type InstructionData = Vec<u32>;
 pub struct ProgramInput<T> {
+    pub self_program_id: ProgramId,
     pub pre_states: Vec<AccountWithMetadata>,
     pub instruction: T,
 }
@@ -415,11 +416,13 @@ pub fn compute_authorized_pdas(
 /// Reads the NSSA inputs from the guest environment.
 #[must_use]
 pub fn read_nssa_inputs<T: DeserializeOwned>() -> (ProgramInput<T>, InstructionData) {
+    let self_program_id: ProgramId = env::read();
     let pre_states: Vec<AccountWithMetadata> = env::read();
     let instruction_words: InstructionData = env::read();
     let instruction = T::deserialize(&mut Deserializer::new(instruction_words.as_ref())).unwrap();
     (
         ProgramInput {
+            self_program_id,
             pre_states,
             instruction,
         },
