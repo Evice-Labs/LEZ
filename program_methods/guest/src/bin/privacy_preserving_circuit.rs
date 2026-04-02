@@ -111,7 +111,7 @@ impl ExecutionState {
             // This ensures the proof commits to which program produced the output.
             assert_eq!(
                 program_output.self_program_id, chained_call.program_id,
-                "program output self_program_id does not match chained call program_id"
+                "Program output self_program_id does not match chained call program_id"
             );
 
             // Check that the program is well behaved.
