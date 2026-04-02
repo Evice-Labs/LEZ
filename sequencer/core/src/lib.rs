@@ -15,8 +15,7 @@ use logos_blockchain_key_management_system_service::keys::{ED25519_SECRET_KEY_SI
 use mempool::{MemPool, MemPoolHandle};
 #[cfg(feature = "mock")]
 pub use mock::SequencerCoreWithMockClients;
-use nssa::{V03State, ValidatedStateDiff};
-use nssa_core::{BlockId, Timestamp};
+use nssa::V03State;
 pub use storage::error::DbError;
 use testnet_initial_state::initial_state;
 
@@ -164,28 +163,6 @@ impl<BC: BlockSettlementClientTrait, IC: IndexerClientTrait> SequencerCore<BC, I
         (sequencer_core, mempool_handle)
     }
 
-    fn execute_check_transaction_on_state(
-        &mut self,
-        tx: NSSATransaction,
-        block_id: BlockId,
-        timestamp: Timestamp,
-    ) -> Result<NSSATransaction, nssa::error::NssaError> {
-        match &tx {
-            NSSATransaction::Public(tx) => self
-                .state
-                .transition_from_public_transaction(tx, block_id, timestamp),
-            NSSATransaction::PrivacyPreserving(tx) => self
-                .state
-                .transition_from_privacy_preserving_transaction(tx, block_id, timestamp),
-            NSSATransaction::ProgramDeployment(tx) => self
-                .state
-                .transition_from_program_deployment_transaction(tx),
-        }
-        .inspect_err(|err| warn!("Error at transition {err:#?}"))?;
-
-        Ok(tx)
-    }
-
     pub async fn produce_new_block(&mut self) -> Result<u64> {
         let (tx, _msg_id) = self
             .produce_new_block_with_mempool_transactions()
@@ -202,30 +179,6 @@ impl<BC: BlockSettlementClientTrait, IC: IndexerClientTrait> SequencerCore<BC, I
         }
 
         Ok(self.chain_height)
-    }
-
-    fn validate_transaction_and_produce_state_diff(
-        &self,
-        transaction: &NSSATransaction,
-        block_id: BlockId,
-        timestamp: Timestamp,
-    ) -> Result<ValidatedStateDiff, nssa::error::NssaError> {
-        match transaction {
-            NSSATransaction::Public(tx) => {
-                ValidatedStateDiff::from_public_transaction(tx, &self.state, block_id, timestamp)
-            }
-            NSSATransaction::PrivacyPreserving(tx) => {
-                ValidatedStateDiff::from_privacy_preserving_transaction(
-                    tx,
-                    &self.state,
-                    block_id,
-                    timestamp,
-                )
-            }
-            NSSATransaction::ProgramDeployment(tx) => {
-                ValidatedStateDiff::from_program_deployment_transaction(tx, &self.state)
-            }
-        }
     }
 
     /// Produces new block from transactions in mempool and packs it into a `SignedMantleTx`.
@@ -249,33 +202,15 @@ impl<BC: BlockSettlementClientTrait, IC: IndexerClientTrait> SequencerCore<BC, I
         let new_block_timestamp = u64::try_from(chrono::Utc::now().timestamp_millis())
             .expect("Timestamp must be positive");
 
-        // Note: the clock accounts are only modified by the clock program, which is invoked
-        // exclusively by the sequencer as the mandatory last transaction in each block. All user
-        // transactions are processed before that invocation, so this snapshot is always current
-        // and constant for all transactions in the block
-        let clock_accounts_pre =
-            nssa::CLOCK_PROGRAM_ACCOUNT_IDS.map(|id| (id, self.state.get_account_by_id(id)));
-
         while let Some(tx) = self.mempool.pop() {
             let tx_hash = tx.hash();
 
-            let validated_diff = match self.validate_transaction_and_produce_state_diff(
-                &tx,
+            let validated_diff = match tx.validate_on_state(
+                &self.state,
                 new_block_height,
                 new_block_timestamp,
             ) {
-                Ok(diff) => {
-                    let touches_system = clock_accounts_pre.iter().any(|(id, pre)| {
-                        diff.public_diff().get(id).is_some_and(|post| post != pre)
-                    });
-                    if touches_system {
-                        warn!(
-                            "Dropping transaction from mempool: user transactions may not modify the system clock account"
-                        );
-                        continue;
-                    }
-                    diff
-                }
+                Ok(diff) => diff,
                 Err(err) => {
                     error!(
                         "Transaction with hash {tx_hash} failed execution check with error: {err:#?}, skipping it",
@@ -319,13 +254,17 @@ impl<BC: BlockSettlementClientTrait, IC: IndexerClientTrait> SequencerCore<BC, I
         }
 
         // Append the Block Context Program invocation as the mandatory last transaction.
-        let clock_nssa_tx = self
-            .execute_check_transaction_on_state(
-                NSSATransaction::clock_invocation(new_block_timestamp),
+        let clock_nssa_tx = NSSATransaction::clock_invocation(new_block_timestamp);
+        self.state
+            .transition_from_public_transaction(
+                match &clock_nssa_tx {
+                    NSSATransaction::Public(tx) => tx,
+                    _ => unreachable!("clock_invocation always returns Public"),
+                },
                 new_block_height,
                 new_block_timestamp,
             )
-            .context("Clock transaction failed \u{2014} aborting block production")?;
+            .context("Clock transaction failed. Aborting block production.")?;
         valid_transactions.push(clock_nssa_tx);
 
         let hashable_data = HashableBlockData {
@@ -454,8 +393,6 @@ mod tests {
     use common::{test_utils::sequencer_sign_key_for_testing, transaction::NSSATransaction};
     use logos_blockchain_core::mantle::ops::channel::ChannelId;
     use mempool::MemPoolHandle;
-    
-    
     use testnet_initial_state::{initial_accounts, initial_pub_accounts_private_keys};
 
     use crate::{
@@ -582,7 +519,7 @@ mod tests {
         let tx = tx.transaction_stateless_check().unwrap();
 
         // Signature is not from sender. Execution fails
-        let result = sequencer.execute_check_transaction_on_state(tx, 0, 0);
+        let result = tx.execute_check_on_state(&mut sequencer.state, 0, 0);
 
         assert!(matches!(
             result,
@@ -608,7 +545,9 @@ mod tests {
         // Passed pre-check
         assert!(result.is_ok());
 
-        let result = sequencer.execute_check_transaction_on_state(result.unwrap(), 0, 0);
+        let result = result
+            .unwrap()
+            .execute_check_on_state(&mut sequencer.state, 0, 0);
         let is_failed_at_balance_mismatch = matches!(
             result.err().unwrap(),
             nssa::error::NssaError::ProgramExecutionFailed(_)
@@ -630,8 +569,7 @@ mod tests {
             acc1, 0, acc2, 100, &sign_key1,
         );
 
-        sequencer
-            .execute_check_transaction_on_state(tx, 0, 0)
+        tx.execute_check_on_state(&mut sequencer.state, 0, 0)
             .unwrap();
 
         let bal_from = sequencer.state.get_account_by_id(acc1).balance;

@@ -1,6 +1,6 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use log::warn;
-use nssa::{AccountId, V03State};
+use nssa::{AccountId, V03State, ValidatedStateDiff};
 use nssa_core::{BlockId, Timestamp};
 use serde::{Deserialize, Serialize};
 
@@ -83,21 +83,53 @@ impl NSSATransaction {
         }
     }
 
+    /// Validates the transaction against the current state and returns the resulting diff
+    /// without applying it. Rejects transactions that modify clock system accounts.
+    pub fn validate_on_state(
+        &self,
+        state: &V03State,
+        block_id: BlockId,
+        timestamp: Timestamp,
+    ) -> Result<ValidatedStateDiff, nssa::error::NssaError> {
+        let diff = match self {
+            Self::Public(tx) => {
+                ValidatedStateDiff::from_public_transaction(tx, state, block_id, timestamp)
+            }
+            Self::PrivacyPreserving(tx) => ValidatedStateDiff::from_privacy_preserving_transaction(
+                tx, state, block_id, timestamp,
+            ),
+            Self::ProgramDeployment(tx) => {
+                ValidatedStateDiff::from_program_deployment_transaction(tx, state)
+            }
+        }?;
+
+        let public_diff = diff.public_diff();
+        let touches_clock = nssa::CLOCK_PROGRAM_ACCOUNT_IDS.iter().any(|id| {
+            public_diff
+                .get(id)
+                .is_some_and(|post| *post != state.get_account_by_id(*id))
+        });
+        if touches_clock {
+            return Err(nssa::error::NssaError::InvalidInput(
+                "Transaction modifies system clock accounts".into(),
+            ));
+        }
+
+        Ok(diff)
+    }
+
+    /// Validates the transaction against the current state, rejects modifications to clock
+    /// system accounts, and applies the resulting diff to the state.
     pub fn execute_check_on_state(
         self,
         state: &mut V03State,
         block_id: BlockId,
         timestamp: Timestamp,
     ) -> Result<Self, nssa::error::NssaError> {
-        match &self {
-            Self::Public(tx) => state.transition_from_public_transaction(tx, block_id, timestamp),
-            Self::PrivacyPreserving(tx) => {
-                state.transition_from_privacy_preserving_transaction(tx, block_id, timestamp)
-            }
-            Self::ProgramDeployment(tx) => state.transition_from_program_deployment_transaction(tx),
-        }
-        .inspect_err(|err| warn!("Error at transition {err:#?}"))?;
-
+        let diff = self
+            .validate_on_state(state, block_id, timestamp)
+            .inspect_err(|err| warn!("Error at transition {err:#?}"))?;
+        state.apply_state_diff(diff);
         Ok(self)
     }
 }

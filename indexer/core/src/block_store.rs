@@ -122,7 +122,18 @@ impl IndexerStore {
         {
             let mut state_guard = self.current_state.write().await;
 
-            for transaction in &block.body.transactions {
+            let (clock_tx, user_txs) = block
+                .body
+                .transactions
+                .split_last()
+                .ok_or_else(|| anyhow::anyhow!("Block has no transactions"))?;
+
+            anyhow::ensure!(
+                *clock_tx == NSSATransaction::clock_invocation(block.header.timestamp),
+                "Last transaction in block must be the clock invocation for the block timestamp"
+            );
+
+            for transaction in user_txs {
                 transaction
                     .clone()
                     .transaction_stateless_check()?
@@ -132,6 +143,16 @@ impl IndexerStore {
                         block.header.timestamp,
                     )?;
             }
+
+            // Apply the clock invocation directly (it is expected to modify clock accounts).
+            let NSSATransaction::Public(clock_public_tx) = clock_tx else {
+                anyhow::bail!("Clock invocation must be a public transaction");
+            };
+            state_guard.transition_from_public_transaction(
+                clock_public_tx,
+                block.header.block_id,
+                block.header.timestamp,
+            )?;
         }
 
         // ToDo: Currently we are fetching only finalized blocks
