@@ -942,13 +942,12 @@ mod tests {
     async fn transactions_touching_clock_account_are_dropped_from_block() {
         let (mut sequencer, mempool_handle) = common_setup().await;
 
-        // Canonical clock invocation and a crafted variant with different parameters targeting
-        // the clock program — both must be dropped since the program_id is the clock program.
+        // Canonical clock invocation and a crafted variant with a different timestamp — both must
+        // be dropped because their diffs touch the clock accounts.
         let crafted_clock_tx = {
-            let acc1 = sequencer.sequencer_config.initial_accounts[0].account_id;
             let message = nssa::public_transaction::Message::try_new(
                 nssa::program::Program::clock().id(),
-                vec![acc1],
+                nssa::CLOCK_PROGRAM_ACCOUNT_IDS.to_vec(),
                 vec![],
                 42_u64,
             )
@@ -991,8 +990,10 @@ mod tests {
                 nonces: vec![],
                 public_post_states: vec![nssa::Account::default()],
                 encrypted_private_post_states: vec![],
-                new_commitments: vec![],
+                new_commitments: vec![nssa_core::Commitment::new([0_u8; 32])], // required: at least one commitment or nullifier
                 new_nullifiers: vec![],
+                block_validity_window: (..).into(),
+                timestamp_validity_window: (..).into(),
             };
             let witness_set = nssa::privacy_preserving_transaction::WitnessSet::from_raw_parts(
                 vec![],
@@ -1068,6 +1069,61 @@ mod tests {
         assert_ne!(
             sequencer.chain_height, different_genesis_id,
             "Chain height should NOT match the modified config.genesis_id"
+        );
+    }
+
+    #[tokio::test]
+    async fn user_tx_that_chain_calls_clock_is_dropped() {
+        let (mut sequencer, mempool_handle) = common_setup().await;
+
+        // Deploy the clock_chain_caller test program.
+        let deploy_tx = NSSATransaction::ProgramDeployment(nssa::ProgramDeploymentTransaction::new(
+            nssa::program_deployment_transaction::Message::new(
+                test_program_methods::CLOCK_CHAIN_CALLER_ELF.to_vec(),
+            ),
+        ));
+        mempool_handle.push(deploy_tx).await.unwrap();
+        sequencer
+            .produce_new_block_with_mempool_transactions()
+            .unwrap();
+
+        // Build a user transaction that invokes clock_chain_caller, which in turn chain-calls the
+        // clock program with the clock accounts. The sequencer should detect that the resulting
+        // state diff modifies clock accounts and drop the transaction.
+        let clock_chain_caller_id =
+            nssa::program::Program::new(test_program_methods::CLOCK_CHAIN_CALLER_ELF.to_vec())
+                .unwrap()
+                .id();
+        let clock_program_id = nssa::program::Program::clock().id();
+        let timestamp: u64 = 0;
+
+        let message = nssa::public_transaction::Message::try_new(
+            clock_chain_caller_id,
+            nssa::CLOCK_PROGRAM_ACCOUNT_IDS.to_vec(),
+            vec![], // no signers
+            (clock_program_id, timestamp),
+        )
+        .unwrap();
+        let user_tx = NSSATransaction::Public(nssa::PublicTransaction::new(
+            message,
+            nssa::public_transaction::WitnessSet::from_raw_parts(vec![]),
+        ));
+
+        mempool_handle.push(user_tx).await.unwrap();
+        sequencer
+            .produce_new_block_with_mempool_transactions()
+            .unwrap();
+
+        let block = sequencer
+            .store
+            .get_block_at_id(sequencer.chain_height)
+            .unwrap()
+            .unwrap();
+
+        // The user tx must have been dropped; only the mandatory clock invocation remains.
+        assert_eq!(
+            block.body.transactions,
+            vec![NSSATransaction::clock_invocation(block.header.timestamp)]
         );
     }
 }

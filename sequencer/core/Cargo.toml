@@ -40,3 +40,4 @@ mock = []
 
 [dev-dependencies]
 futures.workspace = true
+test_program_methods.workspace = true

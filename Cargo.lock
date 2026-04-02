@@ -7161,6 +7161,7 @@ dependencies = [
  "serde_json",
  "storage",
  "tempfile",
+ "test_program_methods",
  "testnet_initial_state",
  "tokio",
  "url",
