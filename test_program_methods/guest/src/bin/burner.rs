@@ -4,7 +4,9 @@ type Instruction = u128;
 
 fn main() {
     let (
-        ProgramInput { self_program_id, caller_program_id: _,
+        ProgramInput {
+            self_program_id,
+            caller_program_id: _,
             pre_states,
             instruction: balance_to_burn,
         },

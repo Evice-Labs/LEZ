@@ -6,7 +6,15 @@ use nssa_core::{
 type Instruction = ();
 
 fn main() {
-    let (ProgramInput { self_program_id, caller_program_id: _, pre_states, .. }, instruction_words) = read_nssa_inputs::<Instruction>();
+    let (
+        ProgramInput {
+            self_program_id,
+            caller_program_id: _,
+            pre_states,
+            ..
+        },
+        instruction_words,
+    ) = read_nssa_inputs::<Instruction>();
 
     let Ok([pre]) = <[_; 1]>::try_from(pre_states) else {
         return;

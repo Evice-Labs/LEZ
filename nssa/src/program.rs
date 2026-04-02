@@ -59,7 +59,13 @@ impl Program {
         // Write inputs to the program
         let mut env_builder = ExecutorEnv::builder();
         env_builder.session_limit(Some(MAX_NUM_CYCLES_PUBLIC_EXECUTION));
-        Self::write_inputs(self.id, caller_program_id, pre_states, instruction_data, &mut env_builder)?;
+        Self::write_inputs(
+            self.id,
+            caller_program_id,
+            pre_states,
+            instruction_data,
+            &mut env_builder,
+        )?;
         let env = env_builder.build().unwrap();
 
         // Execute the program (without proving)

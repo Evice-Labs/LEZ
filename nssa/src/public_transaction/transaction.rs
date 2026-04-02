@@ -147,8 +147,11 @@ impl PublicTransaction {
                 "Program {:?} pre_states: {:?}, instruction_data: {:?}",
                 chained_call.program_id, chained_call.pre_states, chained_call.instruction_data
             );
-            let mut program_output =
-                program.execute(caller_program_id, &chained_call.pre_states, &chained_call.instruction_data)?;
+            let mut program_output = program.execute(
+                caller_program_id,
+                &chained_call.pre_states,
+                &chained_call.instruction_data,
+            )?;
             debug!(
                 "Program {:?} output: {:?}",
                 chained_call.program_id, program_output

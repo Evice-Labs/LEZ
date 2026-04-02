@@ -7833,6 +7833,7 @@ version = "0.1.0"
 dependencies = [
  "nssa_core",
  "risc0-zkvm",
+ "serde",
 ]
 
 [[package]]

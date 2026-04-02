@@ -16,18 +16,18 @@
 //!   2. User callback (arbitrary logic, e.g. arbitrage)
 //!   3. Self-call to `InvariantCheck` (using `self_program_id` to reference itself)
 //!
-//! - `InvariantCheck` (internal): enforces that the vault balance was restored after
-//!   the callback. Uses `caller_program_id == Some(self_program_id)` to prevent standalone
-//!   calls (this is the visibility enforcement mechanism).
+//! - `InvariantCheck` (internal): enforces that the vault balance was restored after the callback.
+//!   Uses `caller_program_id == Some(self_program_id)` to prevent standalone calls (this is the
+//!   visibility enforcement mechanism).
 //!
 //! # What this demonstrates
 //!
 //! - `self_program_id`: enables a program to chain back to itself (step 3 above)
 //! - `caller_program_id`: enables a program to restrict which callers can invoke an instruction
-//! - Pre-simulated intermediate states: the initiator must compute expected intermediate
-//!   account states and embed them in the instruction. The node validates them deterministically.
-//! - Atomic rollback: if the callback doesn't return funds, the invariant check fails,
-//!   and all state changes from steps 1 and 2 are rolled back automatically.
+//! - Pre-simulated intermediate states: the initiator must compute expected intermediate account
+//!   states and embed them in the instruction. The node validates them deterministically.
+//! - Atomic rollback: if the callback doesn't return funds, the invariant check fails, and all
+//!   state changes from steps 1 and 2 are rolled back automatically.
 //!
 //! # Tests
 //!
@@ -132,8 +132,9 @@ fn main() {
             // Chained call 3: Self-call to enforce the invariant.
             // Uses `self_program_id` to reference this program, the key feature that enables
             // the "prep → callback → assert" pattern without a separate checker program.
-            // If the callback did not return funds, vault_after_callback.balance < min_vault_balance
-            // and this call will panic, rolling back the entire transaction.
+            // If the callback did not return funds, vault_after_callback.balance <
+            // min_vault_balance and this call will panic, rolling back the entire
+            // transaction.
             let invariant_instruction =
                 risc0_zkvm::serde::to_vec(&FlashSwapInstruction::InvariantCheck {
                     min_vault_balance,

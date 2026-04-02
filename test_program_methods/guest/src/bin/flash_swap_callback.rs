@@ -10,12 +10,12 @@
 //! In a real flash swap, this would contain the user's arbitrage or other logic.
 //! In this test program, it is controlled by `return_funds`:
 //!
-//! - `return_funds = true`: emits a token transfer (receiver → vault) to return the funds.
-//!   The invariant check will pass and the transaction will succeed.
+//! - `return_funds = true`: emits a token transfer (receiver → vault) to return the funds. The
+//!   invariant check will pass and the transaction will succeed.
 //!
-//! - `return_funds = false`: emits no transfers. Funds stay with the receiver.
-//!   The invariant check will fail (vault balance < initial), causing full atomic rollback.
-//!   This simulates a malicious or buggy callback that does not repay the flash loan.
+//! - `return_funds = false`: emits no transfers. Funds stay with the receiver. The invariant check
+//!   will fail (vault balance < initial), causing full atomic rollback. This simulates a malicious
+//!   or buggy callback that does not repay the flash loan.
 //!
 //! # Note on caller_program_id
 //!

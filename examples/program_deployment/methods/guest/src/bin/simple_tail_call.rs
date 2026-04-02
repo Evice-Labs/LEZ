@@ -26,7 +26,9 @@ fn hello_world_program_id() -> ProgramId {
 fn main() {
     // Read inputs
     let (
-        ProgramInput { self_program_id, caller_program_id: _,
+        ProgramInput {
+            self_program_id,
+            caller_program_id: _,
             pre_states,
             instruction: (),
         },
@@ -55,7 +57,12 @@ fn main() {
     // Write the outputs.
     // WARNING: constructing a `ProgramOutput` has no effect on its own. `.write()` must be
     // called to commit the output.
-    ProgramOutput::new(self_program_id, instruction_data, vec![pre_state], vec![post_state])
-        .with_chained_calls(vec![chained_call])
-        .write();
+    ProgramOutput::new(
+        self_program_id,
+        instruction_data,
+        vec![pre_state],
+        vec![post_state],
+    )
+    .with_chained_calls(vec![chained_call])
+    .write();
 }
