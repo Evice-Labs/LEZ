@@ -209,15 +209,22 @@ impl<BC: BlockSettlementClientTrait, IC: IndexerClientTrait> SequencerCore<BC, I
         transaction: &NSSATransaction,
         block_id: BlockId,
         timestamp: Timestamp,
-    ) -> Option<Result<ValidatedStateDiff, nssa::error::NssaError>> {
+    ) -> Result<ValidatedStateDiff, nssa::error::NssaError> {
         match transaction {
-            NSSATransaction::Public(public_transaction) => Some(
-                public_transaction.validate_and_produce_public_state_diff(&self.state, block_id, timestamp),
-            ),
-            NSSATransaction::PrivacyPreserving(privacy_preserving_transaction) => Some(
-                privacy_preserving_transaction.validate_and_produce_public_state_diff(&self.state, block_id, timestamp),
-            ),
-            NSSATransaction::ProgramDeployment(_) => None,
+            NSSATransaction::Public(tx) => {
+                ValidatedStateDiff::from_public_transaction(tx, &self.state, block_id, timestamp)
+            }
+            NSSATransaction::PrivacyPreserving(tx) => {
+                ValidatedStateDiff::from_privacy_preserving_transaction(
+                    tx,
+                    &self.state,
+                    block_id,
+                    timestamp,
+                )
+            }
+            NSSATransaction::ProgramDeployment(tx) => {
+                ValidatedStateDiff::from_program_deployment_transaction(tx, &self.state)
+            }
         }
     }
 
@@ -253,7 +260,7 @@ impl<BC: BlockSettlementClientTrait, IC: IndexerClientTrait> SequencerCore<BC, I
             let tx_hash = tx.hash();
 
             let validated_diff = match self.validate_transaction_and_produce_state_diff(&tx, new_block_height, new_block_timestamp) {
-                Some(Ok(diff)) => {
+                Ok(diff) => {
                     let touches_system = clock_accounts_pre
                         .iter()
                         .any(|(id, pre)| diff.public_diff().get(id).is_some_and(|post| post != pre));
@@ -263,15 +270,14 @@ impl<BC: BlockSettlementClientTrait, IC: IndexerClientTrait> SequencerCore<BC, I
                         );
                         continue;
                     }
-                    Some(diff)
+                    diff
                 }
-                Some(Err(err)) => {
+                Err(err) => {
                     error!(
                         "Transaction with hash {tx_hash} failed execution check with error: {err:#?}, skipping it",
                     );
                     continue;
                 }
-                None => None,
             };
 
             // Check if block size exceeds limit
@@ -299,20 +305,7 @@ impl<BC: BlockSettlementClientTrait, IC: IndexerClientTrait> SequencerCore<BC, I
                 break;
             }
 
-            match validated_diff {
-                Some(diff) => self.state.apply_state_diff(diff),
-                None => {
-                    if let NSSATransaction::ProgramDeployment(deploy_tx) = &tx {
-                        if let Err(err) = self.state.transition_from_program_deployment_transaction(deploy_tx) {
-                            error!(
-                                "Transaction with hash {tx_hash} failed execution check with error: {err:#?}, skipping it",
-                            );
-                            // TODO: Probably need to handle unsuccessful transaction execution?
-                            continue;
-                        }
-                    }
-                }
-            }
+            self.state.apply_state_diff(validated_diff);
 
             valid_transactions.push(tx);
             info!("Validated transaction with hash {tx_hash}, including it in block");

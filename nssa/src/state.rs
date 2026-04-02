@@ -19,7 +19,7 @@ use crate::{
     privacy_preserving_transaction::PrivacyPreservingTransaction, program::Program,
     program_deployment_transaction::ProgramDeploymentTransaction,
     public_transaction::PublicTransaction,
-    state_diff::ValidatedStateDiff,
+    validated_state_diff::ValidatedStateDiff,
 };
 
 pub const MAX_NUMBER_CHAINED_CALLS: usize = 10;
@@ -198,6 +198,9 @@ impl V03State {
         }
         self.private_state.0.extend(&diff.new_commitments);
         self.private_state.1.extend(&diff.new_nullifiers);
+        if let Some(program) = diff.program {
+            self.insert_program(program);
+        }
     }
 
     pub fn transition_from_public_transaction(
@@ -206,7 +209,7 @@ impl V03State {
         block_id: BlockId,
         timestamp: Timestamp,
     ) -> Result<(), NssaError> {
-        let diff = tx.validate_and_produce_public_state_diff(self, block_id, timestamp)?;
+        let diff = ValidatedStateDiff::from_public_transaction(tx, self, block_id, timestamp)?;
         self.apply_state_diff(diff);
         Ok(())
     }
@@ -217,7 +220,8 @@ impl V03State {
         block_id: BlockId,
         timestamp: Timestamp,
     ) -> Result<(), NssaError> {
-        let diff = tx.validate_and_produce_public_state_diff(self, block_id, timestamp)?;
+        let diff =
+            ValidatedStateDiff::from_privacy_preserving_transaction(tx, self, block_id, timestamp)?;
         self.apply_state_diff(diff);
         Ok(())
     }
@@ -226,8 +230,8 @@ impl V03State {
         &mut self,
         tx: &ProgramDeploymentTransaction,
     ) -> Result<(), NssaError> {
-        let program = tx.validate_and_produce_public_state_diff(self)?;
-        self.insert_program(program);
+        let diff = ValidatedStateDiff::from_program_deployment_transaction(tx, self)?;
+        self.apply_state_diff(diff);
         Ok(())
     }
 
