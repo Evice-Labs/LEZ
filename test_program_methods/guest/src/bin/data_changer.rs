@@ -5,7 +5,8 @@ type Instruction = Vec<u8>;
 /// A program that modifies the account data by setting bytes sent in instruction.
 fn main() {
     let (
-        ProgramInput { self_program_id,
+        ProgramInput {
+            self_program_id,
             pre_states,
             instruction: data,
         },

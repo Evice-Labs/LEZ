@@ -63,7 +63,8 @@ fn transfer(
 fn main() {
     // Read input accounts.
     let (
-        ProgramInput { self_program_id,
+        ProgramInput {
+            self_program_id,
             pre_states,
             instruction: balance_to_move,
         },

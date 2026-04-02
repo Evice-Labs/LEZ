@@ -4,7 +4,8 @@ type Instruction = ();
 
 fn main() {
     let (
-        ProgramInput { self_program_id,
+        ProgramInput {
+            self_program_id,
             pre_states,
             instruction: (),
         },
@@ -17,5 +18,11 @@ fn main() {
 
     let account_post = AccountPostState::new_claimed(pre.account.clone(), Claim::Authorized);
 
-    ProgramOutput::new(self_program_id, instruction_words, vec![pre], vec![account_post]).write();
+    ProgramOutput::new(
+        self_program_id,
+        instruction_words,
+        vec![pre],
+        vec![account_post],
+    )
+    .write();
 }

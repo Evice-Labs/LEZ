@@ -45,7 +45,8 @@ fn main() {
     // Read input accounts.
     // It is expected to receive only two accounts: [pinata_account, winner_account]
     let (
-        ProgramInput { self_program_id,
+        ProgramInput {
+            self_program_id,
             pre_states,
             instruction: solution,
         },

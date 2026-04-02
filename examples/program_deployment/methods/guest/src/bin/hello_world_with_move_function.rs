@@ -65,7 +65,8 @@ fn move_data(from_pre: AccountWithMetadata, to_pre: AccountWithMetadata) -> Vec<
 fn main() {
     // Read input accounts.
     let (
-        ProgramInput { self_program_id,
+        ProgramInput {
+            self_program_id,
             pre_states,
             instruction: (function_id, data),
         },

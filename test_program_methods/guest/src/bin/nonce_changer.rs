@@ -3,7 +3,14 @@ use nssa_core::program::{AccountPostState, ProgramInput, ProgramOutput, read_nss
 type Instruction = ();
 
 fn main() {
-    let (ProgramInput { self_program_id, pre_states, .. }, instruction_words) = read_nssa_inputs::<Instruction>();
+    let (
+        ProgramInput {
+            self_program_id,
+            pre_states,
+            ..
+        },
+        instruction_words,
+    ) = read_nssa_inputs::<Instruction>();
 
     let Ok([pre]) = <[_; 1]>::try_from(pre_states) else {
         return;

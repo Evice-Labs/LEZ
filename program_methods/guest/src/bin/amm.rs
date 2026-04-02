@@ -13,7 +13,8 @@ use nssa_core::program::{ProgramInput, ProgramOutput, read_nssa_inputs};
 
 fn main() {
     let (
-        ProgramInput { self_program_id,
+        ProgramInput {
+            self_program_id,
             pre_states,
             instruction,
         },
@@ -152,7 +153,12 @@ fn main() {
         }
     };
 
-    ProgramOutput::new(self_program_id, instruction_words, pre_states_clone, post_states)
-        .with_chained_calls(chained_calls)
-        .write();
+    ProgramOutput::new(
+        self_program_id,
+        instruction_words,
+        pre_states_clone,
+        post_states,
+    )
+    .with_chained_calls(chained_calls)
+    .write();
 }

@@ -636,24 +636,24 @@ mod tests {
 
     #[test]
     fn program_output_with_block_validity_window_range_from() {
-        let output =
-            ProgramOutput::new(DEFAULT_PROGRAM_ID, vec![], vec![], vec![]).with_block_validity_window(10_u64..);
+        let output = ProgramOutput::new(DEFAULT_PROGRAM_ID, vec![], vec![], vec![])
+            .with_block_validity_window(10_u64..);
         assert_eq!(output.block_validity_window.start(), Some(10));
         assert_eq!(output.block_validity_window.end(), None);
     }
 
     #[test]
     fn program_output_with_block_validity_window_range_to() {
-        let output =
-            ProgramOutput::new(DEFAULT_PROGRAM_ID, vec![], vec![], vec![]).with_block_validity_window(..100_u64);
+        let output = ProgramOutput::new(DEFAULT_PROGRAM_ID, vec![], vec![], vec![])
+            .with_block_validity_window(..100_u64);
         assert_eq!(output.block_validity_window.start(), None);
         assert_eq!(output.block_validity_window.end(), Some(100));
     }
 
     #[test]
     fn program_output_try_with_block_validity_window_empty_range_fails() {
-        let result =
-            ProgramOutput::new(DEFAULT_PROGRAM_ID, vec![], vec![], vec![]).try_with_block_validity_window(5_u64..5);
+        let result = ProgramOutput::new(DEFAULT_PROGRAM_ID, vec![], vec![], vec![])
+            .try_with_block_validity_window(5_u64..5);
         assert!(result.is_err());
     }
 
