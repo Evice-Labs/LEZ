@@ -384,6 +384,7 @@ pub mod tests {
             self.insert_program(Program::validity_window());
             self.insert_program(Program::flash_swap_initiator());
             self.insert_program(Program::flash_swap_callback());
+            self.insert_program(Program::malicious_self_program_id());
             self
         }
 
@@ -3712,6 +3713,32 @@ pub mod tests {
         assert!(
             result.is_err(),
             "standalone InvariantCheck should be rejected (caller_program_id is None)"
+        );
+    }
+
+    #[test]
+    fn malicious_self_program_id_rejected_in_public_execution() {
+        let program = Program::malicious_self_program_id();
+        let acc_id = AccountId::from(program.id());
+        let account = Account::default();
+
+        let mut state = V03State::new_with_genesis_accounts(&[], &[]).with_test_programs();
+        state.force_insert_account(acc_id, account);
+
+        let message = public_transaction::Message::try_new(
+            program.id(),
+            vec![acc_id],
+            vec![],
+            (),
+        )
+        .unwrap();
+        let witness_set = public_transaction::WitnessSet::for_message(&message, &[]);
+        let tx = PublicTransaction::new(message, witness_set);
+
+        let result = state.transition_from_public_transaction(&tx, 1, 0);
+        assert!(
+            result.is_err(),
+            "program with wrong self_program_id in output should be rejected"
         );
     }
 }

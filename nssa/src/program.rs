@@ -338,6 +338,13 @@ mod tests {
             Self::new(FLASH_SWAP_CALLBACK_ELF.to_vec())
                 .expect("flash_swap_callback must be a valid Risc0 program")
         }
+
+        #[must_use]
+        pub fn malicious_self_program_id() -> Self {
+            use test_program_methods::MALICIOUS_SELF_PROGRAM_ID_ELF;
+            Self::new(MALICIOUS_SELF_PROGRAM_ID_ELF.to_vec())
+                .expect("malicious_self_program_id must be a valid Risc0 program")
+        }
     }
 
     #[test]
