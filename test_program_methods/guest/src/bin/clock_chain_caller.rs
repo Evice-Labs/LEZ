@@ -11,6 +11,7 @@ type Instruction = (ProgramId, u64); // (clock_program_id, timestamp)
 fn main() {
     let (
         ProgramInput {
+            self_program_id,
             pre_states,
             instruction: (clock_program_id, timestamp),
         },
@@ -29,7 +30,7 @@ fn main() {
         pda_seeds: vec![],
     };
 
-    ProgramOutput::new(instruction_words, pre_states, post_states)
+    ProgramOutput::new(self_program_id, instruction_words, pre_states, post_states)
         .with_chained_calls(vec![chained_call])
         .write();
 }

@@ -8669,6 +8669,7 @@ dependencies = [
  "async-stream",
  "ata_core",
  "base58",
+ "bip39",
  "clap",
  "common",
  "env_logger",
