@@ -52,13 +52,14 @@ impl Program {
 
     pub(crate) fn execute(
         &self,
+        caller_program_id: Option<ProgramId>,
         pre_states: &[AccountWithMetadata],
         instruction_data: &InstructionData,
     ) -> Result<ProgramOutput, NssaError> {
         // Write inputs to the program
         let mut env_builder = ExecutorEnv::builder();
         env_builder.session_limit(Some(MAX_NUM_CYCLES_PUBLIC_EXECUTION));
-        Self::write_inputs(self.id, pre_states, instruction_data, &mut env_builder)?;
+        Self::write_inputs(self.id, caller_program_id, pre_states, instruction_data, &mut env_builder)?;
         let env = env_builder.build().unwrap();
 
         // Execute the program (without proving)
@@ -79,12 +80,16 @@ impl Program {
     /// Writes inputs to `env_builder` in the order expected by the programs.
     pub(crate) fn write_inputs(
         program_id: ProgramId,
+        caller_program_id: Option<ProgramId>,
         pre_states: &[AccountWithMetadata],
         instruction_data: &[u32],
         env_builder: &mut ExecutorEnvBuilder,
     ) -> Result<(), NssaError> {
         env_builder
             .write(&program_id)
+            .map_err(|e| NssaError::ProgramWriteInputFailed(e.to_string()))?;
+        env_builder
+            .write(&caller_program_id)
             .map_err(|e| NssaError::ProgramWriteInputFailed(e.to_string()))?;
         let pre_states = pre_states.to_vec();
         env_builder

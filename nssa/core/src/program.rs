@@ -17,6 +17,7 @@ pub type ProgramId = [u32; 8];
 pub type InstructionData = Vec<u32>;
 pub struct ProgramInput<T> {
     pub self_program_id: ProgramId,
+    pub caller_program_id: Option<ProgramId>,
     pub pre_states: Vec<AccountWithMetadata>,
     pub instruction: T,
 }
@@ -421,12 +422,14 @@ pub fn compute_authorized_pdas(
 #[must_use]
 pub fn read_nssa_inputs<T: DeserializeOwned>() -> (ProgramInput<T>, InstructionData) {
     let self_program_id: ProgramId = env::read();
+    let caller_program_id: Option<ProgramId> = env::read();
     let pre_states: Vec<AccountWithMetadata> = env::read();
     let instruction_words: InstructionData = env::read();
     let instruction = T::deserialize(&mut Deserializer::new(instruction_words.as_ref())).unwrap();
     (
         ProgramInput {
             self_program_id,
+            caller_program_id,
             pre_states,
             instruction,
         },

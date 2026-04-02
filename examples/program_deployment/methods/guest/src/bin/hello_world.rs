@@ -18,8 +18,7 @@ type Instruction = Vec<u8>;
 fn main() {
     // Read inputs
     let (
-        ProgramInput {
-            self_program_id,
+        ProgramInput { self_program_id, caller_program_id: _,
             pre_states,
             instruction: greeting,
         },
@@ -51,11 +50,5 @@ fn main() {
     // with the NSSA program rules.
     // WARNING: constructing a `ProgramOutput` has no effect on its own. `.write()` must be
     // called to commit the output.
-    ProgramOutput::new(
-        self_program_id,
-        instruction_data,
-        vec![pre_state],
-        vec![post_state],
-    )
-    .write();
+    ProgramOutput::new(self_program_id, instruction_data, vec![pre_state], vec![post_state]).write();
 }
