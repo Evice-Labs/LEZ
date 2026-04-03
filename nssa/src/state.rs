@@ -479,6 +479,51 @@ pub mod tests {
         PublicTransaction::new(message, witness_set)
     }
 
+    // ── Flash Swap types (mirrors of guest types for host-side serialisation) ──
+
+    #[derive(serde::Serialize, serde::Deserialize)]
+    struct CallbackInstruction {
+        return_funds: bool,
+        token_program_id: ProgramId,
+        amount: u128,
+        vault_after_return: Option<AccountWithMetadata>,
+        receiver_after_return: Option<AccountWithMetadata>,
+    }
+
+    #[derive(serde::Serialize, serde::Deserialize)]
+    #[expect(clippy::large_enum_variant, reason = "test-only mirror of guest enum, boxing unnecessary")]
+    enum FlashSwapInstruction {
+        Initiate {
+            token_program_id: ProgramId,
+            callback_program_id: ProgramId,
+            amount_out: u128,
+            callback_instruction_data: Vec<u32>,
+            vault_after_transfer: AccountWithMetadata,
+            receiver_after_transfer: AccountWithMetadata,
+            vault_after_callback: AccountWithMetadata,
+        },
+        InvariantCheck {
+            min_vault_balance: u128,
+        },
+    }
+
+    fn build_flash_swap_tx(
+        initiator: &Program,
+        vault_id: AccountId,
+        receiver_id: AccountId,
+        instruction: FlashSwapInstruction,
+    ) -> PublicTransaction {
+        let message = public_transaction::Message::try_new(
+            initiator.id(),
+            vec![vault_id, receiver_id],
+            vec![], // no signers — vault is PDA-authorised
+            instruction,
+        )
+        .unwrap();
+        let witness_set = public_transaction::WitnessSet::for_message(&message, &[]);
+        PublicTransaction::new(message, witness_set)
+    }
+
     #[test]
     fn new_with_genesis() {
         let key1 = PrivateKey::try_new([1; 32]).unwrap();
@@ -3467,58 +3512,6 @@ pub mod tests {
         } else {
             assert!(matches!(result, Err(NssaError::OutOfValidityWindow)));
         }
-    }
-
-    // ── Flash Swap integration tests ──────────────────────────────────────────
-
-    /// Mirror of the guest `FlashSwapInstruction` enum so we can serialise
-    /// instructions on the host side.
-    #[derive(serde::Serialize, serde::Deserialize)]
-    #[allow(clippy::large_enum_variant)]
-    enum FlashSwapInstruction {
-        Initiate {
-            token_program_id: ProgramId,
-            callback_program_id: ProgramId,
-            amount_out: u128,
-            callback_instruction_data: Vec<u32>,
-            vault_after_transfer: AccountWithMetadata,
-            receiver_after_transfer: AccountWithMetadata,
-            vault_after_callback: AccountWithMetadata,
-        },
-        InvariantCheck {
-            min_vault_balance: u128,
-        },
-    }
-
-    /// Mirror of the guest `CallbackInstruction`.
-    #[derive(serde::Serialize, serde::Deserialize)]
-    struct CallbackInstruction {
-        return_funds: bool,
-        token_program_id: ProgramId,
-        amount: u128,
-        vault_after_return: Option<AccountWithMetadata>,
-        receiver_after_return: Option<AccountWithMetadata>,
-    }
-
-    /// Build a flash-swap `PublicTransaction` ready for execution.
-    ///
-    /// `vault_id` / `receiver_id` are the two accounts passed to the initiator.
-    /// `instruction` is the already-built `FlashSwapInstruction`.
-    fn build_flash_swap_tx(
-        initiator: &Program,
-        vault_id: AccountId,
-        receiver_id: AccountId,
-        instruction: FlashSwapInstruction,
-    ) -> PublicTransaction {
-        let message = public_transaction::Message::try_new(
-            initiator.id(),
-            vec![vault_id, receiver_id],
-            vec![], // no signers — vault is PDA-authorised
-            instruction,
-        )
-        .unwrap();
-        let witness_set = public_transaction::WitnessSet::for_message(&message, &[]);
-        PublicTransaction::new(message, witness_set)
     }
 
     #[test]
