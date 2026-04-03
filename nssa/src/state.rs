@@ -14,10 +14,13 @@ use nssa_core::{
 };
 
 use crate::{
-    error::NssaError, merkle_tree::MerkleTree,
-    privacy_preserving_transaction::PrivacyPreservingTransaction, program::Program,
+    error::NssaError,
+    merkle_tree::MerkleTree,
+    privacy_preserving_transaction::PrivacyPreservingTransaction,
+    program::Program,
     program_deployment_transaction::ProgramDeploymentTransaction,
-    public_transaction::PublicTransaction, validated_state_diff::ValidatedStateDiff,
+    public_transaction::PublicTransaction,
+    validated_state_diff::{StateDiff, ValidatedStateDiff},
 };
 
 pub const MAX_NUMBER_CHAINED_CALLS: usize = 10;
@@ -188,8 +191,13 @@ impl V03State {
     }
 
     pub fn apply_state_diff(&mut self, diff: ValidatedStateDiff) {
-        let (signer_account_ids, public_diff, new_commitments, new_nullifiers, program) =
-            diff.into_parts();
+        let StateDiff {
+            signer_account_ids,
+            public_diff,
+            new_commitments,
+            new_nullifiers,
+            program,
+        } = diff.into_state_diff();
         #[expect(
             clippy::iter_over_hash_type,
             reason = "Iteration order doesn't matter here"

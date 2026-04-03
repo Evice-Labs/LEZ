@@ -259,7 +259,10 @@ impl<BC: BlockSettlementClientTrait, IC: IndexerClientTrait> SequencerCore<BC, I
             .transition_from_public_transaction(
                 match &clock_nssa_tx {
                     NSSATransaction::Public(tx) => tx,
-                    _ => unreachable!("clock_invocation always returns Public"),
+                    NSSATransaction::PrivacyPreserving(_)
+                    | NSSATransaction::ProgramDeployment(_) => {
+                        unreachable!("clock_invocation always returns Public")
+                    }
                 },
                 new_block_height,
                 new_block_timestamp,

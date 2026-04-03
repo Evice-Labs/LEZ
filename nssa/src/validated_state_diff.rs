@@ -24,17 +24,19 @@ use crate::{
     state::MAX_NUMBER_CHAINED_CALLS,
 };
 
+pub struct StateDiff {
+    pub signer_account_ids: Vec<AccountId>,
+    pub public_diff: HashMap<AccountId, Account>,
+    pub new_commitments: Vec<Commitment>,
+    pub new_nullifiers: Vec<Nullifier>,
+    pub program: Option<Program>,
+}
+
 /// The validated output of executing or verifying a transaction, ready to be applied to the state.
 ///
 /// Can only be constructed by the transaction validation functions inside this crate, ensuring the
 /// diff has been cryptographically checked before any state mutation occurs.
-pub struct ValidatedStateDiff {
-    signer_account_ids: Vec<AccountId>,
-    public_diff: HashMap<AccountId, Account>,
-    new_commitments: Vec<Commitment>,
-    new_nullifiers: Vec<Nullifier>,
-    program: Option<Program>,
-}
+pub struct ValidatedStateDiff(StateDiff);
 
 impl ValidatedStateDiff {
     pub fn from_public_transaction(
@@ -243,13 +245,13 @@ impl ValidatedStateDiff {
             );
         }
 
-        Ok(Self {
+        Ok(Self(StateDiff {
             signer_account_ids,
             public_diff: state_diff,
             new_commitments: vec![],
             new_nullifiers: vec![],
             program: None,
-        })
+        }))
     }
 
     pub fn from_privacy_preserving_transaction(
@@ -359,13 +361,13 @@ impl ValidatedStateDiff {
             .map(|(nullifier, _)| nullifier)
             .collect();
 
-        Ok(Self {
+        Ok(Self(StateDiff {
             signer_account_ids,
             public_diff,
             new_commitments: message.new_commitments.clone(),
             new_nullifiers,
             program: None,
-        })
+        }))
     }
 
     pub fn from_program_deployment_transaction(
@@ -377,13 +379,13 @@ impl ValidatedStateDiff {
         if state.programs().contains_key(&program.id()) {
             return Err(NssaError::ProgramAlreadyExists);
         }
-        Ok(Self {
+        Ok(Self(StateDiff {
             signer_account_ids: vec![],
             public_diff: HashMap::new(),
             new_commitments: vec![],
             new_nullifiers: vec![],
             program: Some(program),
-        })
+        }))
     }
 
     /// Returns the public account changes produced by this transaction.
@@ -392,25 +394,11 @@ impl ValidatedStateDiff {
     /// to enforce that system accounts are not modified by user transactions.
     #[must_use]
     pub fn public_diff(&self) -> HashMap<AccountId, Account> {
-        self.public_diff.clone()
+        self.0.public_diff.clone()
     }
 
-    pub(crate) fn into_parts(
-        self,
-    ) -> (
-        Vec<AccountId>,
-        HashMap<AccountId, Account>,
-        Vec<Commitment>,
-        Vec<Nullifier>,
-        Option<Program>,
-    ) {
-        (
-            self.signer_account_ids,
-            self.public_diff,
-            self.new_commitments,
-            self.new_nullifiers,
-            self.program,
-        )
+    pub(crate) fn into_state_diff(self) -> StateDiff {
+        self.0
     }
 }
 

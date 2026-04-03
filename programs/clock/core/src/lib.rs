@@ -21,7 +21,6 @@ pub const CLOCK_PROGRAM_ACCOUNT_IDS: [AccountId; 3] = [
 /// The instruction type for the Clock Program. The sequencer passes the current block timestamp.
 pub type Instruction = Timestamp;
 
-
 /// The data stored in a clock account: `[block_id: u64 LE | timestamp: u64 LE]`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ClockAccountData {
