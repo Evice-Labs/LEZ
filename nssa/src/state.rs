@@ -3469,22 +3469,12 @@ pub mod tests {
         }
     }
 
-    #[test]
-    fn state_serialization_roundtrip() {
-        let account_id_1 = AccountId::new([1; 32]);
-        let account_id_2 = AccountId::new([2; 32]);
-        let initial_data = [(account_id_1, 100_u128), (account_id_2, 151_u128)];
-        let state = V03State::new_with_genesis_accounts(&initial_data, &[]).with_test_programs();
-        let bytes = borsh::to_vec(&state).unwrap();
-        let state_from_bytes: V03State = borsh::from_slice(&bytes).unwrap();
-        assert_eq!(state, state_from_bytes);
-    }
-
     // ── Flash Swap integration tests ──────────────────────────────────────────
 
     /// Mirror of the guest `FlashSwapInstruction` enum so we can serialise
     /// instructions on the host side.
     #[derive(serde::Serialize, serde::Deserialize)]
+    #[allow(clippy::large_enum_variant)]
     enum FlashSwapInstruction {
         Initiate {
             token_program_id: ProgramId,
@@ -3529,6 +3519,17 @@ pub mod tests {
         .unwrap();
         let witness_set = public_transaction::WitnessSet::for_message(&message, &[]);
         PublicTransaction::new(message, witness_set)
+    }
+
+    #[test]
+    fn state_serialization_roundtrip() {
+        let account_id_1 = AccountId::new([1; 32]);
+        let account_id_2 = AccountId::new([2; 32]);
+        let initial_data = [(account_id_1, 100_u128), (account_id_2, 151_u128)];
+        let state = V03State::new_with_genesis_accounts(&initial_data, &[]).with_test_programs();
+        let bytes = borsh::to_vec(&state).unwrap();
+        let state_from_bytes: V03State = borsh::from_slice(&bytes).unwrap();
+        assert_eq!(state, state_from_bytes);
     }
 
     #[test]
