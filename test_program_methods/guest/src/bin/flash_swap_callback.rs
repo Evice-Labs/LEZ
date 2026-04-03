@@ -17,7 +17,7 @@
 //!   will fail (vault balance < initial), causing full atomic rollback. This simulates a malicious
 //!   or buggy callback that does not repay the flash loan.
 //!
-//! # Note on caller_program_id
+//! # Note on `caller_program_id`
 //!
 //! This program does not enforce any access control on `caller_program_id`.
 //! It is designed to be called by the flash swap initiator but could in principle be
