@@ -491,7 +491,10 @@ pub mod tests {
     }
 
     #[derive(serde::Serialize, serde::Deserialize)]
-    #[expect(clippy::large_enum_variant, reason = "test-only mirror of guest enum, boxing unnecessary")]
+    #[expect(
+        clippy::large_enum_variant,
+        reason = "test-only mirror of guest enum, boxing unnecessary"
+    )]
     enum FlashSwapInstruction {
         Initiate {
             token_program_id: ProgramId,
