@@ -3719,19 +3719,14 @@ pub mod tests {
     #[test]
     fn malicious_self_program_id_rejected_in_public_execution() {
         let program = Program::malicious_self_program_id();
-        let acc_id = AccountId::from(program.id());
+        let acc_id = AccountId::new([99; 32]);
         let account = Account::default();
 
         let mut state = V03State::new_with_genesis_accounts(&[], &[]).with_test_programs();
         state.force_insert_account(acc_id, account);
 
-        let message = public_transaction::Message::try_new(
-            program.id(),
-            vec![acc_id],
-            vec![],
-            (),
-        )
-        .unwrap();
+        let message =
+            public_transaction::Message::try_new(program.id(), vec![acc_id], vec![], ()).unwrap();
         let witness_set = public_transaction::WitnessSet::for_message(&message, &[]);
         let tx = PublicTransaction::new(message, witness_set);
 

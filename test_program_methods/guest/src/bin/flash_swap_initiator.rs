@@ -24,8 +24,8 @@
 //!
 //! - `self_program_id`: enables a program to chain back to itself (step 3 above)
 //! - `caller_program_id`: enables a program to restrict which callers can invoke an instruction
-//! - Computed intermediate states: the initiator computes expected intermediate account
-//!   states from the pre_states and amount, keeping the instruction minimal.
+//! - Computed intermediate states: the initiator computes expected intermediate account states from
+//!   the pre_states and amount, keeping the instruction minimal.
 //! - Atomic rollback: if the callback doesn't return funds, the invariant check fails, and all
 //!   state changes from steps 1 and 2 are rolled back automatically.
 //!
