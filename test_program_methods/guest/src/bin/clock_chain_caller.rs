@@ -1,9 +1,12 @@
-use nssa_core::program::{
-    AccountPostState, ChainedCall, ProgramId, ProgramInput, ProgramOutput, read_nssa_inputs,
+use nssa_core::{
+    Timestamp,
+    program::{
+        AccountPostState, ChainedCall, ProgramId, ProgramInput, ProgramOutput, read_nssa_inputs,
+    },
 };
 use risc0_zkvm::serde::to_vec;
 
-type Instruction = (ProgramId, u64); // (clock_program_id, timestamp)
+type Instruction = (ProgramId, Timestamp); // (clock_program_id, timestamp)
 
 /// A program that chain-calls the clock program with the clock accounts it received as pre-states.
 /// Used in tests to verify that user transactions cannot modify clock accounts, even indirectly
