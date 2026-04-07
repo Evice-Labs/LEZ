@@ -1062,4 +1062,76 @@ mod tests {
             "Block production should abort when clock account data is corrupted"
         );
     }
+
+    #[tokio::test]
+    async fn genesis_private_account_cannot_be_re_initialized() {
+        use common::transaction::NSSATransaction;
+        use nssa::{
+            Account,
+            privacy_preserving_transaction::{
+                PrivacyPreservingTransaction, circuit::execute_and_prove, message::Message,
+                witness_set::WitnessSet,
+            },
+            program::Program,
+        };
+        use nssa_core::{
+            SharedSecretKey,
+            account::AccountWithMetadata,
+            encryption::{EphemeralPublicKey, EphemeralSecretKey, ViewingPublicKey},
+        };
+        use testnet_initial_state::PrivateAccountPublicInitialData;
+
+        let nsk: nssa_core::NullifierSecretKey = [7; 32];
+        let npk = nssa_core::NullifierPublicKey::from(&nsk);
+        let vsk: EphemeralSecretKey = [8; 32];
+        let vpk = ViewingPublicKey::from_scalar(vsk);
+
+        let genesis_account = Account {
+            program_owner: Program::authenticated_transfer_program().id(),
+            ..Account::default()
+        };
+
+        // Start a sequencer from config with a preconfigured private genesis account
+        let mut config = setup_sequencer_config();
+        config.initial_private_accounts = Some(vec![PrivateAccountPublicInitialData {
+            npk: npk.clone(),
+            account: genesis_account,
+        }]);
+
+        let (mut sequencer, _mempool_handle) =
+            SequencerCoreWithMockClients::start_from_config(config).await;
+
+        // Attempt to re-initialize the same genesis account via a privacy-preserving transaction
+        let esk = [9; 32];
+        let shared_secret = SharedSecretKey::new(&esk, &vpk);
+        let epk = EphemeralPublicKey::from_scalar(esk);
+
+        let (output, proof) = execute_and_prove(
+            vec![AccountWithMetadata::new(Account::default(), true, &npk)],
+            Program::serialize_instruction(0_u128).unwrap(),
+            vec![1],
+            vec![(npk.clone(), shared_secret)],
+            vec![nsk],
+            vec![None],
+            &Program::authenticated_transfer_program().into(),
+        )
+        .unwrap();
+
+        let message =
+            Message::try_from_circuit_output(vec![], vec![], vec![(npk, vpk, epk)], output)
+                .unwrap();
+
+        let witness_set = WitnessSet::for_message(&message, proof, &[]);
+        let tx = NSSATransaction::PrivacyPreserving(PrivacyPreservingTransaction::new(
+            message,
+            witness_set,
+        ));
+
+        let result = tx.execute_check_on_state(&mut sequencer.state, 2, 0);
+
+        assert!(
+            result.is_err_and(|e| e.to_string().contains("Nullifier already seen")),
+            "re-initializing a genesis private account must be rejected by the sequencer"
+        );
+    }
 }
