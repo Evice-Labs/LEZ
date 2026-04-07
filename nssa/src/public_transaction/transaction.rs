@@ -193,6 +193,12 @@ impl PublicTransaction {
                 NssaError::InvalidProgramBehavior
             );
 
+            // Verify that the program output's caller_program_id matches the actual caller.
+            ensure!(
+                program_output.caller_program_id == caller_program_id,
+                NssaError::InvalidProgramBehavior
+            );
+
             // Verify execution corresponds to a well-behaved program.
             // See the # Programs section for the definition of the `validate_execution` method.
             ensure!(

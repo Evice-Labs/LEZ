@@ -5,7 +5,7 @@ fn main() {
     let (
         ProgramInput {
             self_program_id,
-            caller_program_id: _,
+            caller_program_id,
             pre_states,
             instruction,
         },
@@ -60,6 +60,7 @@ fn main() {
 
     ProgramOutput::new(
         self_program_id,
+        caller_program_id,
         instruction_words,
         pre_states_clone,
         post_states,
