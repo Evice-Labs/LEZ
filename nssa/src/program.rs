@@ -9,7 +9,8 @@ use serde::Serialize;
 use crate::{
     error::NssaError,
     program_methods::{
-        AMM_ELF, ASSOCIATED_TOKEN_ACCOUNT_ELF, AUTHENTICATED_TRANSFER_ELF, PINATA_ELF, TOKEN_ELF,
+        AMM_ELF, ASSOCIATED_TOKEN_ACCOUNT_ELF, AUTHENTICATED_TRANSFER_ELF, CLOCK_ELF, PINATA_ELF,
+        TOKEN_ELF,
     },
 };
 
@@ -124,6 +125,11 @@ impl Program {
     #[must_use]
     pub fn amm() -> Self {
         Self::new(AMM_ELF.to_vec()).expect("The AMM program must be a valid Risc0 program")
+    }
+
+    #[must_use]
+    pub fn clock() -> Self {
+        Self::new(CLOCK_ELF.to_vec()).expect("The clock program must be a valid Risc0 program")
     }
 
     #[must_use]
@@ -351,6 +357,18 @@ mod tests {
             use test_program_methods::MALICIOUS_CALLER_PROGRAM_ID_ELF;
             Self::new(MALICIOUS_CALLER_PROGRAM_ID_ELF.to_vec())
                 .expect("malicious_caller_program_id must be a valid Risc0 program")
+        }
+
+        #[must_use]
+        pub fn time_locked_transfer() -> Self {
+            use test_program_methods::TIME_LOCKED_TRANSFER_ELF;
+            Self::new(TIME_LOCKED_TRANSFER_ELF.to_vec()).unwrap()
+        }
+
+        #[must_use]
+        pub fn pinata_cooldown() -> Self {
+            use test_program_methods::PINATA_COOLDOWN_ELF;
+            Self::new(PINATA_COOLDOWN_ELF.to_vec()).unwrap()
         }
     }
 
