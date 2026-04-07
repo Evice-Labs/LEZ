@@ -8,7 +8,7 @@ fn main() {
     let (
         ProgramInput {
             self_program_id: _, // ignore the correct ID
-            caller_program_id: _,
+            caller_program_id,
             pre_states,
             instruction: (),
         },
@@ -23,6 +23,7 @@ fn main() {
     // Deliberately output wrong self_program_id
     ProgramOutput::new(
         DEFAULT_PROGRAM_ID, // WRONG: should be self_program_id
+        caller_program_id,
         instruction_words,
         pre_states,
         post_states,

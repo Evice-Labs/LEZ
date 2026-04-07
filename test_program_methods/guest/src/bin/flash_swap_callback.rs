@@ -43,7 +43,7 @@ fn main() {
     let (
         ProgramInput {
             self_program_id,
-            caller_program_id: _, // not enforced in this callback
+            caller_program_id, // not enforced in this callback
             pre_states,
             instruction,
         },
@@ -81,6 +81,7 @@ fn main() {
     // All mutations go through the token program via chained calls.
     ProgramOutput::new(
         self_program_id,
+        caller_program_id,
         instruction_words,
         vec![vault_pre.clone(), receiver_pre.clone()],
         vec![

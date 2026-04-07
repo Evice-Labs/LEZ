@@ -163,6 +163,7 @@ fn main() {
             // All mutations happen inside the chained calls (token transfers).
             ProgramOutput::new(
                 self_program_id,
+                caller_program_id,
                 instruction_words,
                 vec![vault_pre.clone(), receiver_pre.clone()],
                 vec![
@@ -204,6 +205,7 @@ fn main() {
             // Pass-through: no state changes in the invariant check step.
             ProgramOutput::new(
                 self_program_id,
+                caller_program_id,
                 instruction_words,
                 vec![vault.clone()],
                 vec![AccountPostState::new(vault.account)],
