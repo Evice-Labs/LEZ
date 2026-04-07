@@ -158,8 +158,9 @@ mod tests {
     use crate::{
         program::Program,
         program_methods::{
+            AMM_ELF, AMM_ID, ASSOCIATED_TOKEN_ACCOUNT_ELF, ASSOCIATED_TOKEN_ACCOUNT_ID,
             AUTHENTICATED_TRANSFER_ELF, AUTHENTICATED_TRANSFER_ID, PINATA_ELF, PINATA_ID,
-            TOKEN_ELF, TOKEN_ID,
+            PINATA_TOKEN_ELF, PINATA_TOKEN_ID, TOKEN_ELF, TOKEN_ID,
         },
     };
 
@@ -380,5 +381,21 @@ mod tests {
         assert_eq!(token_program.elf, TOKEN_ELF);
         assert_eq!(pinata_program.id, PINATA_ID);
         assert_eq!(pinata_program.elf, PINATA_ELF);
+    }
+
+    #[test]
+    fn builtin_program_ids_match_elfs() {
+        let cases: &[(&[u8], [u32; 8])] = &[
+            (AUTHENTICATED_TRANSFER_ELF, AUTHENTICATED_TRANSFER_ID),
+            (TOKEN_ELF, TOKEN_ID),
+            (AMM_ELF, AMM_ID),
+            (ASSOCIATED_TOKEN_ACCOUNT_ELF, ASSOCIATED_TOKEN_ACCOUNT_ID),
+            (PINATA_ELF, PINATA_ID),
+            (PINATA_TOKEN_ELF, PINATA_TOKEN_ID),
+        ];
+        for (elf, expected_id) in cases {
+            let program = Program::new(elf.to_vec()).unwrap();
+            assert_eq!(program.id(), *expected_id);
+        }
     }
 }
