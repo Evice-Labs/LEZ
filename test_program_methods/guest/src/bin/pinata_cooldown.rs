@@ -7,7 +7,7 @@
 //! Expected pre-states (in order):
 //!   0 - pinata account (authorized, owned by this program)
 //!   1 - winner account
-//!   2 - clock account (read-only, e.g. `CLOCK_01`).
+//!   2 - clock account `CLOCK_01`.
 //!
 //! Pinata account data layout (24 bytes):
 //!   [prize: u64 LE | `cooldown_ms`: u64 LE | `last_claim_timestamp`: u64 LE].

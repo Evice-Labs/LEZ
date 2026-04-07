@@ -44,23 +44,6 @@ impl NSSATransaction {
         }
     }
 
-    /// Returns the canonical Clock Program invocation transaction for the given block
-    /// timestamp. Every valid block must end with exactly one occurrence of this transaction.
-    #[must_use]
-    pub fn clock_invocation(timestamp: clock_core::Instruction) -> Self {
-        let message = nssa::public_transaction::Message::try_new(
-            nssa::program::Program::clock().id(),
-            clock_core::CLOCK_PROGRAM_ACCOUNT_IDS.to_vec(),
-            vec![],
-            timestamp,
-        )
-        .expect("Clock invocation message should always be constructable");
-        Self::Public(nssa::PublicTransaction::new(
-            message,
-            nssa::public_transaction::WitnessSet::from_raw_parts(vec![]),
-        ))
-    }
-
     // TODO: Introduce type-safe wrapper around checked transaction, e.g. AuthenticatedTransaction
     pub fn transaction_stateless_check(self) -> Result<Self, TransactionMalformationError> {
         // Stateless checks here
@@ -169,4 +152,21 @@ pub enum TransactionMalformationError {
     FailedToDecode { tx: HashType },
     #[error("Transaction size {size} exceeds maximum allowed size of {max} bytes")]
     TransactionTooLarge { size: usize, max: usize },
+}
+
+/// Returns the canonical Clock Program invocation transaction for the given block timestamp.
+/// Every valid block must end with exactly one occurrence of this transaction.
+#[must_use]
+pub fn clock_invocation(timestamp: clock_core::Instruction) -> nssa::PublicTransaction {
+    let message = nssa::public_transaction::Message::try_new(
+        nssa::program::Program::clock().id(),
+        clock_core::CLOCK_PROGRAM_ACCOUNT_IDS.to_vec(),
+        vec![],
+        timestamp,
+    )
+    .expect("Clock invocation message should always be constructable");
+    nssa::PublicTransaction::new(
+        message,
+        nssa::public_transaction::WitnessSet::from_raw_parts(vec![]),
+    )
 }

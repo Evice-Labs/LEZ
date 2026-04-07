@@ -4,7 +4,7 @@ use anyhow::Result;
 use bedrock_client::HeaderId;
 use common::{
     block::{BedrockStatus, Block},
-    transaction::NSSATransaction,
+    transaction::{NSSATransaction, clock_invocation},
 };
 use nssa::{Account, AccountId, V03State};
 use nssa_core::BlockId;
@@ -129,7 +129,7 @@ impl IndexerStore {
                 .ok_or_else(|| anyhow::anyhow!("Block has no transactions"))?;
 
             anyhow::ensure!(
-                *clock_tx == NSSATransaction::clock_invocation(block.header.timestamp),
+                *clock_tx == NSSATransaction::Public(clock_invocation(block.header.timestamp)),
                 "Last transaction in block must be the clock invocation for the block timestamp"
             );
 
@@ -236,7 +236,7 @@ mod tests {
             );
             let block_id = u64::try_from(i).unwrap();
             let block_timestamp = block_id.saturating_mul(100);
-            let clock_tx = NSSATransaction::clock_invocation(block_timestamp);
+            let clock_tx = NSSATransaction::Public(clock_invocation(block_timestamp));
 
             let next_block = common::test_utils::produce_dummy_block(
                 block_id,

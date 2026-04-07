@@ -7,7 +7,7 @@ use common::PINATA_BASE58;
 use common::{
     HashType,
     block::{BedrockStatus, Block, HashableBlockData},
-    transaction::NSSATransaction,
+    transaction::{NSSATransaction, clock_invocation},
 };
 use config::SequencerConfig;
 use log::{error, info, warn};
@@ -205,20 +205,6 @@ impl<BC: BlockSettlementClientTrait, IC: IndexerClientTrait> SequencerCore<BC, I
         while let Some(tx) = self.mempool.pop() {
             let tx_hash = tx.hash();
 
-            let validated_diff = match tx.validate_on_state(
-                &self.state,
-                new_block_height,
-                new_block_timestamp,
-            ) {
-                Ok(diff) => diff,
-                Err(err) => {
-                    error!(
-                        "Transaction with hash {tx_hash} failed execution check with error: {err:#?}, skipping it",
-                    );
-                    continue;
-                }
-            };
-
             // Check if block size exceeds limit
             let temp_valid_transactions =
                 [valid_transactions.as_slice(), std::slice::from_ref(&tx)].concat();
@@ -244,6 +230,20 @@ impl<BC: BlockSettlementClientTrait, IC: IndexerClientTrait> SequencerCore<BC, I
                 break;
             }
 
+            let validated_diff = match tx.validate_on_state(
+                &self.state,
+                new_block_height,
+                new_block_timestamp,
+            ) {
+                Ok(diff) => diff,
+                Err(err) => {
+                    error!(
+                        "Transaction with hash {tx_hash} failed execution check with error: {err:#?}, skipping it",
+                    );
+                    continue;
+                }
+            };
+
             self.state.apply_state_diff(validated_diff);
 
             valid_transactions.push(tx);
@@ -253,22 +253,12 @@ impl<BC: BlockSettlementClientTrait, IC: IndexerClientTrait> SequencerCore<BC, I
             }
         }
 
-        // Append the Block Context Program invocation as the mandatory last transaction.
-        let clock_nssa_tx = NSSATransaction::clock_invocation(new_block_timestamp);
+        // Append the Clock Program invocation as the mandatory last transaction.
+        let clock_tx = clock_invocation(new_block_timestamp);
         self.state
-            .transition_from_public_transaction(
-                match &clock_nssa_tx {
-                    NSSATransaction::Public(tx) => tx,
-                    NSSATransaction::PrivacyPreserving(_)
-                    | NSSATransaction::ProgramDeployment(_) => {
-                        unreachable!("clock_invocation always returns Public")
-                    }
-                },
-                new_block_height,
-                new_block_timestamp,
-            )
+            .transition_from_public_transaction(&clock_tx, new_block_height, new_block_timestamp)
             .context("Clock transaction failed. Aborting block production.")?;
-        valid_transactions.push(clock_nssa_tx);
+        valid_transactions.push(NSSATransaction::Public(clock_tx));
 
         let hashable_data = HashableBlockData {
             block_id: new_block_height,
@@ -393,7 +383,10 @@ mod tests {
     use std::{pin::pin, time::Duration};
 
     use bedrock_client::BackoffConfig;
-    use common::{test_utils::sequencer_sign_key_for_testing, transaction::NSSATransaction};
+    use common::{
+        test_utils::sequencer_sign_key_for_testing,
+        transaction::{NSSATransaction, clock_invocation},
+    };
     use logos_blockchain_core::mantle::ops::channel::ChannelId;
     use mempool::MemPoolHandle;
     use testnet_initial_state::{initial_accounts, initial_pub_accounts_private_keys};
@@ -656,7 +649,7 @@ mod tests {
             block.body.transactions,
             vec![
                 tx.clone(),
-                NSSATransaction::clock_invocation(block.header.timestamp)
+                NSSATransaction::Public(clock_invocation(block.header.timestamp))
             ]
         );
     }
@@ -688,7 +681,7 @@ mod tests {
             block.body.transactions,
             vec![
                 tx.clone(),
-                NSSATransaction::clock_invocation(block.header.timestamp)
+                NSSATransaction::Public(clock_invocation(block.header.timestamp))
             ]
         );
 
@@ -705,7 +698,9 @@ mod tests {
         // The replay is rejected, so only the clock tx is in the block.
         assert_eq!(
             block.body.transactions,
-            vec![NSSATransaction::clock_invocation(block.header.timestamp)]
+            vec![NSSATransaction::Public(clock_invocation(
+                block.header.timestamp
+            ))]
         );
     }
 
@@ -745,7 +740,7 @@ mod tests {
                 block.body.transactions,
                 vec![
                     tx.clone(),
-                    NSSATransaction::clock_invocation(block.header.timestamp)
+                    NSSATransaction::Public(clock_invocation(block.header.timestamp))
                 ]
             );
         }
@@ -879,7 +874,7 @@ mod tests {
             new_block.body.transactions,
             vec![
                 tx,
-                NSSATransaction::clock_invocation(new_block.header.timestamp)
+                NSSATransaction::Public(clock_invocation(new_block.header.timestamp))
             ],
             "New block should contain the submitted transaction and the clock invocation"
         );
@@ -905,7 +900,7 @@ mod tests {
             ))
         };
         mempool_handle
-            .push(NSSATransaction::clock_invocation(0))
+            .push(NSSATransaction::Public(clock_invocation(0)))
             .await
             .unwrap();
         mempool_handle.push(crafted_clock_tx).await.unwrap();
@@ -922,7 +917,9 @@ mod tests {
         // Both transactions were dropped. Only the system-appended clock tx remains.
         assert_eq!(
             block.body.transactions,
-            vec![NSSATransaction::clock_invocation(block.header.timestamp)]
+            vec![NSSATransaction::Public(clock_invocation(
+                block.header.timestamp
+            ))]
         );
     }
 
@@ -1027,7 +1024,9 @@ mod tests {
         // The user tx must have been dropped; only the mandatory clock invocation remains.
         assert_eq!(
             block.body.transactions,
-            vec![NSSATransaction::clock_invocation(block.header.timestamp)]
+            vec![NSSATransaction::Public(clock_invocation(
+                block.header.timestamp
+            ))]
         );
     }
 
