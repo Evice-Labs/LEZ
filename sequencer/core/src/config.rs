@@ -26,7 +26,8 @@ pub struct SequencerConfig {
     pub is_genesis_random: bool,
     /// Maximum number of user transactions in a block (excludes the mandatory clock transaction).
     pub max_num_tx_in_block: usize,
-    /// Maximum block size (includes header and transactions).
+    /// Maximum block size (includes header, user transactions, and the mandatory clock
+    /// transaction).
     #[serde(default = "default_max_block_size")]
     pub max_block_size: ByteSize,
     /// Mempool maximum size.

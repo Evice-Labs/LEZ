@@ -202,12 +202,20 @@ impl<BC: BlockSettlementClientTrait, IC: IndexerClientTrait> SequencerCore<BC, I
         let new_block_timestamp = u64::try_from(chrono::Utc::now().timestamp_millis())
             .expect("Timestamp must be positive");
 
+        // Pre-create the mandatory clock tx so its size is included in the block size check.
+        let clock_tx = clock_invocation(new_block_timestamp);
+        let clock_nssa_tx = NSSATransaction::Public(clock_tx.clone());
+
         while let Some(tx) = self.mempool.pop() {
             let tx_hash = tx.hash();
 
-            // Check if block size exceeds limit
-            let temp_valid_transactions =
-                [valid_transactions.as_slice(), std::slice::from_ref(&tx)].concat();
+            // Check if block size exceeds limit (including the mandatory clock tx).
+            let temp_valid_transactions = [
+                valid_transactions.as_slice(),
+                std::slice::from_ref(&tx),
+                std::slice::from_ref(&clock_nssa_tx),
+            ]
+            .concat();
             let temp_hashable_data = HashableBlockData {
                 block_id: new_block_height,
                 transactions: temp_valid_transactions,
@@ -254,11 +262,10 @@ impl<BC: BlockSettlementClientTrait, IC: IndexerClientTrait> SequencerCore<BC, I
         }
 
         // Append the Clock Program invocation as the mandatory last transaction.
-        let clock_tx = clock_invocation(new_block_timestamp);
         self.state
             .transition_from_public_transaction(&clock_tx, new_block_height, new_block_timestamp)
             .context("Clock transaction failed. Aborting block production.")?;
-        valid_transactions.push(NSSATransaction::Public(clock_tx));
+        valid_transactions.push(clock_nssa_tx);
 
         let hashable_data = HashableBlockData {
             block_id: new_block_height,
