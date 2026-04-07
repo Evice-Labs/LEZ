@@ -3944,7 +3944,7 @@ pub mod tests {
             ..Account::default()
         };
 
-        let mut state = V03State::new_with_genesis_accounts(&[], &[]).with_test_programs();
+        let mut state = V03State::new_with_genesis_accounts(&[], &[], 0).with_test_programs();
         state.force_insert_account(vault_id, vault_account);
         state.force_insert_account(receiver_id, receiver_account);
 
@@ -3995,7 +3995,7 @@ pub mod tests {
             ..Account::default()
         };
 
-        let mut state = V03State::new_with_genesis_accounts(&[], &[]).with_test_programs();
+        let mut state = V03State::new_with_genesis_accounts(&[], &[], 0).with_test_programs();
         state.force_insert_account(vault_id, vault_account);
         state.force_insert_account(receiver_id, receiver_account);
 
@@ -4052,7 +4052,7 @@ pub mod tests {
             ..Account::default()
         };
 
-        let mut state = V03State::new_with_genesis_accounts(&[], &[]).with_test_programs();
+        let mut state = V03State::new_with_genesis_accounts(&[], &[], 0).with_test_programs();
         state.force_insert_account(vault_id, vault_account);
         state.force_insert_account(receiver_id, receiver_account);
 
@@ -4093,7 +4093,7 @@ pub mod tests {
             ..Account::default()
         };
 
-        let mut state = V03State::new_with_genesis_accounts(&[], &[]).with_test_programs();
+        let mut state = V03State::new_with_genesis_accounts(&[], &[], 0).with_test_programs();
         state.force_insert_account(vault_id, vault_account);
 
         let instruction = FlashSwapInstruction::InvariantCheck {
@@ -4123,7 +4123,7 @@ pub mod tests {
         let acc_id = AccountId::new([99; 32]);
         let account = Account::default();
 
-        let mut state = V03State::new_with_genesis_accounts(&[], &[]).with_test_programs();
+        let mut state = V03State::new_with_genesis_accounts(&[], &[], 0).with_test_programs();
         state.force_insert_account(acc_id, account);
 
         let message =
@@ -4144,7 +4144,7 @@ pub mod tests {
         let acc_id = AccountId::new([99; 32]);
         let account = Account::default();
 
-        let mut state = V03State::new_with_genesis_accounts(&[], &[]).with_test_programs();
+        let mut state = V03State::new_with_genesis_accounts(&[], &[], 0).with_test_programs();
         state.force_insert_account(acc_id, account);
 
         let message =
