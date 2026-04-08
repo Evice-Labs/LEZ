@@ -1,14 +1,15 @@
 services:
 
   cfgsync:
-    image: ghcr.io/logos-blockchain/logos-blockchain@sha256:000982e751dfd346ca5346b8025c685fc3abc585079c59cde3bde7fd63100657
+    image: ghcr.io/logos-blockchain/logos-blockchain@sha256:80755855c70aea11bc58fda01048e9bae3a806253a9a8c0641d2f4738008fbbe
     volumes:
       - ./scripts:/etc/logos-blockchain/scripts
       - ./cfgsync.yaml:/etc/logos-blockchain/cfgsync.yaml:z
+      - ./test_entropy:/etc/logos-blockchain/test_entropy:z
     entrypoint: /etc/logos-blockchain/scripts/run_cfgsync.sh
 
   logos-blockchain-node-0:
-    image: ghcr.io/logos-blockchain/logos-blockchain@sha256:000982e751dfd346ca5346b8025c685fc3abc585079c59cde3bde7fd63100657
+    image: ghcr.io/logos-blockchain/logos-blockchain@sha256:80755855c70aea11bc58fda01048e9bae3a806253a9a8c0641d2f4738008fbbe
     ports:
       - "${PORT:-8080}:18080/tcp"
     volumes:
