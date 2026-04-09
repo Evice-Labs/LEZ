@@ -213,13 +213,19 @@ jobs:
         if: failure()
         run: |
           kill "$(cat /tmp/log-watcher.pid)" 2>/dev/null || true
+          # Filter out noisy gossipsub/overwatch lines that bloat the log without helping debug.
+          NOISE='gossipsub|libp2p_gossipsub|overwatch::overwatch::(handle|runner)|services::state::handle'
           for f in /tmp/container-logs/*.log; do
             [ -e "$f" ] || continue
             echo "=== $f (lines: $(wc -l < $f)) ==="
-            echo "--- proposed-block events with removals ---"
-            grep -B 200 -A 5 -E '\([1-9][0-9]* removed\)' "$f" | tail -3000 || true
-            echo "--- mempool/tx/inscribe activity ---"
-            grep -i -E 'mempool|inscrib|verif|reject|invalid|gas|validate|removed' "$f" | tail -1000 || true
+            echo "--- proposed-block events with removals (denoised) ---"
+            grep -v -E "$NOISE" "$f" \
+              | grep -B 200 -A 5 -E '\([1-9][0-9]* removed\)' \
+              | tail -3000 || true
+            echo "--- mempool/tx/inscribe activity (denoised) ---"
+            grep -v -E "$NOISE" "$f" \
+              | grep -i -E 'mempool|inscrib|verif|reject|invalid|gas|validate|removed' \
+              | tail -1000 || true
           done
 
   valid-proof-test:

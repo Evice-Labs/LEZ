@@ -25,25 +25,32 @@ const L2_TO_L1_TIMEOUT_MILLIS: u64 = 900_000;
 /// or until [`L2_TO_L1_TIMEOUT_MILLIS`] elapses. Returns the last indexer block
 /// id observed.
 async fn wait_for_indexer_to_catch_up(ctx: &TestContext) -> u64 {
-    let deadline = tokio::time::Instant::now() + Duration::from_millis(L2_TO_L1_TIMEOUT_MILLIS);
-    loop {
-        let seq = sequencer_service_rpc::RpcClient::get_last_block_id(ctx.sequencer_client())
-            .await
-            .unwrap_or(0);
-        let ind = ctx
-            .indexer_client()
-            .get_last_finalized_block_id()
-            .await
-            .unwrap_or(1);
-        if ind >= seq && ind > 1 {
-            info!("Indexer caught up: seq={seq}, ind={ind}");
-            return ind;
+    let timeout = Duration::from_millis(L2_TO_L1_TIMEOUT_MILLIS);
+    let mut last_ind: u64 = 1;
+    let inner = async {
+        loop {
+            let seq = sequencer_service_rpc::RpcClient::get_last_block_id(ctx.sequencer_client())
+                .await
+                .unwrap_or(0);
+            let ind = ctx
+                .indexer_client()
+                .get_last_finalized_block_id()
+                .await
+                .unwrap_or(1);
+            last_ind = ind;
+            if ind >= seq && ind > 1 {
+                info!("Indexer caught up: seq={seq}, ind={ind}");
+                return ind;
+            }
+            tokio::time::sleep(Duration::from_secs(2)).await;
         }
-        if tokio::time::Instant::now() >= deadline {
-            info!("Indexer catch-up timed out: seq={seq}, ind={ind}");
-            return ind;
+    };
+    match tokio::time::timeout(timeout, inner).await {
+        Ok(ind) => ind,
+        Err(_) => {
+            info!("Indexer catch-up timed out: ind={last_ind}");
+            last_ind
         }
-        tokio::time::sleep(Duration::from_secs(2)).await;
     }
 }
 
