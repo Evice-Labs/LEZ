@@ -18,7 +18,7 @@ use tokio::test;
 use wallet::cli::{Command, programs::native_token_transfer::AuthTransferSubcommand};
 
 /// Maximum time to wait for the indexer to catch up to the sequencer.
-const L2_TO_L1_TIMEOUT_MILLIS: u64 = 900_000;
+const L2_TO_L1_TIMEOUT_MILLIS: u64 = 180_000;
 
 /// Poll the indexer until its last finalized block id reaches the sequencer's
 /// current last block id (and at least the genesis block has been advanced past),
