@@ -26,11 +26,4 @@ sed -i '/slot_activation_coeff:/,+4 s/denominator: [0-9]\+/denominator: 2/' /dep
 # to the indexer much sooner.
 sed -i 's/security_param: [0-9]\+/security_param: 10/' /deployment-settings.yaml
 
-# Verify the patches took effect (printed to container stdout for debugging).
-echo "=== slot_activation_coeff after sed ==="
-sed -n '/slot_activation_coeff:/,+4 p' /deployment-settings.yaml
-echo "=== security_param after sed ==="
-grep 'security_param' /deployment-settings.yaml
-echo "======================================="
-
 exec /usr/bin/logos-blockchain-node /config.yaml --deployment /deployment-settings.yaml

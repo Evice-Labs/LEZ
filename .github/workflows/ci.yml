@@ -182,51 +182,11 @@ jobs:
       - name: Install nextest
         run: cargo install --locked cargo-nextest
 
-      - name: Start container log capture
-        run: |
-          mkdir -p /tmp/container-logs
-          (
-            seen=""
-            while true; do
-              for c in $(docker ps -q 2>/dev/null); do
-                case " $seen " in
-                  *" $c "*) ;;
-                  *)
-                    name=$(docker inspect -f '{{.Name}}' "$c" 2>/dev/null | sed 's|^/||')
-                    docker logs -f "$c" >"/tmp/container-logs/${name}.log" 2>&1 &
-                    seen="$seen $c"
-                    ;;
-                esac
-              done
-              sleep 1
-            done
-          ) &
-          echo $! > /tmp/log-watcher.pid
-
       - name: Run tests
         env:
           RISC0_DEV_MODE: "1"
           RUST_LOG: "info"
         run: cargo nextest run -p integration_tests indexer -- --skip tps_test
-
-      - name: Dump captured container logs on failure
-        if: failure()
-        run: |
-          kill "$(cat /tmp/log-watcher.pid)" 2>/dev/null || true
-          # Filter out noisy gossipsub/overwatch lines that bloat the log without helping debug.
-          NOISE='gossipsub|libp2p_gossipsub|overwatch::overwatch::(handle|runner)|services::state::handle'
-          for f in /tmp/container-logs/*.log; do
-            [ -e "$f" ] || continue
-            echo "=== $f (lines: $(wc -l < $f)) ==="
-            echo "--- proposed-block events with removals (denoised) ---"
-            grep -v -E "$NOISE" "$f" \
-              | grep -B 200 -A 5 -E '\([1-9][0-9]* removed\)' \
-              | tail -3000 || true
-            echo "--- mempool/tx/inscribe activity (denoised) ---"
-            grep -v -E "$NOISE" "$f" \
-              | grep -i -E 'mempool|inscrib|verif|reject|invalid|gas|validate|removed' \
-              | tail -1000 || true
-          done
 
   valid-proof-test:
     runs-on: ubuntu-latest
