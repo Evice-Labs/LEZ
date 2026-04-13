@@ -12,9 +12,11 @@ export CFG_FILE_PATH="/config.yaml" \
 /usr/bin/logos-blockchain-cfgsync-client
 
 # Use the static deployment-settings.yaml (mounted from host) with consensus
-# params pre-configured for single-node integration tests. Only the
+# params pre-configured for single-node integration tests. Copy to a local path
+# first because sed -i cannot rename on a bind-mounted file. Only the
 # chain_start_time needs to be set dynamically to "now".
+cp /etc/logos-blockchain/deployment-settings.yaml /deployment-settings.yaml
 sed -i "s/PLACEHOLDER_CHAIN_START_TIME/$(date -u '+%Y-%m-%d %H:%M:%S.000000 +00:00:00')/" \
-    /etc/logos-blockchain/deployment-settings.yaml
+    /deployment-settings.yaml
 
-exec /usr/bin/logos-blockchain-node /config.yaml --deployment /etc/logos-blockchain/deployment-settings.yaml
+exec /usr/bin/logos-blockchain-node /config.yaml --deployment /deployment-settings.yaml
