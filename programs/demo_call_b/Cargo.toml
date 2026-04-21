@@ -1,0 +1,11 @@
+[package]
+name = "demo_call_b"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+lez_sdk = { path = "../../lez_sdk", default-features = false }
+nssa_core = { path = "../../nssa/core", default-features = false }
+
+risc0-zkvm = { workspace = true, features = ["getrandom"] }
+serde.workspace = true 
