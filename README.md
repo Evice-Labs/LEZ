@@ -16,6 +16,96 @@ LEZ aims to deliver full programmability in a hybrid public/private model, with 
 
 To our knowledge, this design is unique to LEZ. Other privacy-focused programmable blockchains often require developers to explicitly handle private inputs inside their app logic. In LEZ, privacy is protocol-level: programs do not change, accounts are treated uniformly, and private execution works out of the box.
 
+## LP-0015: General Cross-Program Calls via Tail Calls (CPS)
+This repository includes a fully functional, zero-knowledge compatible Continuation-Passing Style (CPS) mechanism. It allows programs to make general calls (call another program and return) while keeping tail calls as the only underlying primitive. 
+
+This is achieved using **Unforgeable Capability Tickets** evaluated at the host/sequencer level, ensuring safe execution without sacrificing encapsulation.
+
+### Developer Usage (SDK)
+Developers can easily declare public vs internal entrypoints and compose call chains using the provided `lez_sdk_macros`.
+
+**1. Declaring Entrypoints:**
+Use the `lez_dispatcher!` macro to route functions safely:
+```bash
+lez_dispatcher! {
+    public: [ start_chain ],
+    internal: [ continue_chain ] // Cannot be directly called by users
+}
+```
+
+**2. Composing a Call Chain (Program A):**
+To call Program B and return to an internal function in Program A, use `call_program!`. This automatically generates a secure capability ticket and suspends the VM:
+```bash
+#[public]
+fn start_chain(ctx: ExecCtx, (amount, target_b_id): (u64, ProgramId)) -> Vec<AccountPostState> {
+    let local_state = MyContext { initial_balance: 1000 };
+    
+    call_program!(
+        ctx: ctx,
+        target: target_b_id,
+        func: process_funds(amount) => then continue_chain(local_state)
+    );
+}
+```
+
+**3. Returning to Caller (Program B):**
+Program B processes the data and uses `return_to_caller!` to pass control and the ticket back to Program A:
+```bash
+#[public]
+fn process_funds(ctx: ExecCtx, amount: u64) -> Vec<AccountPostState> {
+    let instruction: GeneralCallInstruction = risc0_zkvm::serde::from_slice(&ctx.raw_instruction_data).unwrap();
+    let route = instruction.route.unwrap();
+    
+    let is_success = amount > 0;
+    return_to_caller!(ctx: ctx, route: route, result: is_success);
+}
+```
+
+### Running the End-to-End Demo (with ZK Proofs)
+To evaluate the cross-program invocation demo, you must run the components in standalone mode with **RISC0_DEV_MODE=0** (proving fully enabled).
+
+Open 5 separate terminals from the root directory:
+
+**Terminal 1: Start Bedrock (Logos L1 Node)**
+```Bash
+cd bedrock
+docker compose up
+```
+
+**Terminal 2: Start the Sequencer**
+```Bash
+cd sequencer/service
+RUST_LOG=info RISC0_DEV_MODE=0 cargo run --release -p sequencer_service configs/debug/sequencer_config.json
+```
+
+**Terminal 3: Start the Indexer**
+```Bash
+cd indexer/service
+RUST_LOG=info RISC0_DEV_MODE=0 cargo run --release -p indexer_service configs/indexer_config.json
+```
+**Terminal 4: Deploy Program A & B**
+```Bash
+just run-wallet deploy-program ../artifacts/test_program_methods/demo_call_b.bin
+
+```
+**Terminal 5: Run the E2E Client Demo**
+``` Bash
+RUST_LOG=info RISC0_DEV_MODE=0 cargo run --release --bin run_general_calls_demo
+```
+
+### Demo Expected Output:
+1. **Scenario 1 (Accepted):** A successful multi-hop execution (User -> A -> B -> A). The terminal will wait for ZK Proof generation.
+
+2. **Scenario 2 (Rejected):** A simulated attack where a user directly calls the `#[internal]` continuation handler. It deterministically fails and is rejected by the sequencer.
+
+### Running Tests
+To run the integration tests covering Capability Checks, Replay Attacks, Forged Tickets, and Direct-Call prevention:
+```Bash
+cd integration_tests
+RUST_LOG=info RISC0_DEV_MODE=1 cargo run $(pwd)/configs/debug all
+# Or simply run the standard test suite:
+cargo test --package integration_tests --test general_calls
+```
 ---
 
 ## Example: Creating and transferring tokens across states
