@@ -9,7 +9,7 @@ workspace = true
 
 [dependencies]
 nssa_core = { workspace = true, features = ["host"] }
-nssa.workspace = true
+nssa = { workspace = true, features = ["test-utils"] }
 sequencer_core = { workspace = true, features = ["default", "testnet"] }
 sequencer_service.workspace = true
 wallet.workspace = true
@@ -35,3 +35,13 @@ tempfile.workspace = true
 bytesize.workspace = true
 futures.workspace = true
 testcontainers = { version = "0.27.0", features = ["docker-compose"] }
+
+lez_sdk = { path = "../lez_sdk" }
+risc0-zkvm.workspace = true
+borsh.workspace = true 
+
+[build-dependencies]
+risc0-build = "3.0.5"
+
+[package.metadata.risc0]
+methods = ["../programs/demo_call_a", "../programs/demo_call_b"]
