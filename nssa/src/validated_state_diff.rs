@@ -102,6 +102,9 @@ impl ValidatedStateDiff {
 
         let mut chained_calls = VecDeque::from_iter([(initial_call, None)]);
         let mut chain_calls_counter = 0;
+        // This HashSet acts as a gatekeeper that exists only 
+        // for a single public transaction cycle (one tail-call chain).
+        let mut active_tickets: HashSet<[u8; 32]> = HashSet::new();
 
         while let Some((chained_call, caller_program_id)) = chained_calls.pop_front() {
             ensure!(
@@ -127,6 +130,19 @@ impl ValidatedStateDiff {
                 "Program {:?} output: {:?}",
                 chained_call.program_id, program_output
             );
+
+            // 1. Ticket Consumption Verification (This execution requires an authority ticket)
+            if let Some(ticket) = program_output.consumed_ticket {
+                ensure!(
+                    active_tickets.remove(&ticket), // Removing the ticket prevents 
+                    NssaError::InvalidInput("UNAUTHORIZED: Invalid, missing, or forged Capability Ticket for internal continuation!". into())
+                );
+            }
+
+            // 2. New Ticket Registration (This execution registers a continuation intent for the future)
+            for new_ticket in program_output.issued_tickets.iter() {
+                active_tickets.insert(*new_ticket);
+            }
 
             let authorized_pdas =
                 compute_authorized_pdas(caller_program_id, &chained_call.pda_seeds);
